@@ -390,8 +390,11 @@
                     throw new Error(data.error || 'Registration failed');
                 }
 
-                alert('Registration successful! Welcome to PTO Buddy, ' + formData.firstName + '!');
-                window.location.href = 'login.html';
+                // Store user data for auto-login
+                localStorage.setItem('ptobuddy_user', JSON.stringify(data.user));
+
+                // Redirect directly to dashboard
+                window.location.href = 'dashboard.html';
             } catch (error) {
                 alert('Registration failed: ' + error.message);
             }

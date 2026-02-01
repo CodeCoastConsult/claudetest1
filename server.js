@@ -93,9 +93,22 @@ app.post('/api/register', async (req, res) => {
       canDonate ? 1 : 0, needSupport ? 1 : 0, ptoHours || 0
     );
 
+    // Return user data for auto-login
+    const newUser = {
+      id: result.lastInsertRowid,
+      first_name: firstName,
+      last_name: lastName,
+      email: email,
+      phone: phone,
+      username: username,
+      can_donate: canDonate ? 1 : 0,
+      need_support: needSupport ? 1 : 0,
+      available_pto_hours: ptoHours || 0
+    };
+
     res.status(201).json({
       message: 'Registration successful',
-      userId: result.lastInsertRowid
+      user: newUser
     });
   } catch (error) {
     console.error('Registration error:', error);
