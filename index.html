@@ -24,6 +24,142 @@
             padding: 20px;
         }
 
+        /* Top Navigation */
+        .top-nav {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sign-in-container {
+            position: relative;
+        }
+
+        .sign-in-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: #fff;
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sign-in-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #fff;
+        }
+
+        .sign-in-dropdown {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 0;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            padding: 1.5rem;
+            width: 280px;
+            display: none;
+            z-index: 100;
+        }
+
+        .sign-in-dropdown.active {
+            display: block;
+        }
+
+        .sign-in-dropdown h3 {
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .sign-in-dropdown .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .sign-in-dropdown label {
+            display: block;
+            color: #555;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+            font-weight: 500;
+        }
+
+        .sign-in-dropdown input {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        .sign-in-dropdown input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .sign-in-dropdown .btn-login {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .sign-in-dropdown .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .sign-in-dropdown .error-msg {
+            color: #dc2626;
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+            display: none;
+            text-align: left;
+        }
+
+        .sign-in-dropdown .error-msg.visible {
+            display: block;
+        }
+
+        .sign-in-dropdown .register-link {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .sign-in-dropdown .register-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .nav-spacer {
+            width: 100px;
+        }
+
         .container {
             max-width: 800px;
         }
@@ -154,10 +290,50 @@
                 width: 100%;
                 max-width: 280px;
             }
+
+            .top-nav {
+                padding: 1rem;
+            }
+
+            .sign-in-dropdown {
+                width: 260px;
+                left: -10px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Top Navigation with Sign In -->
+    <nav class="top-nav">
+        <div class="sign-in-container">
+            <button class="sign-in-btn" onclick="toggleSignIn()">
+                <span>Sign In</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
+            <div class="sign-in-dropdown" id="signInDropdown">
+                <h3>Welcome Back</h3>
+                <div class="error-msg" id="loginError"></div>
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required placeholder="Enter password">
+                    </div>
+                    <button type="submit" class="btn-login">Sign In</button>
+                </form>
+                <div class="register-link">
+                    New here? <a href="register.html">Create an account</a>
+                </div>
+            </div>
+        </div>
+        <div class="nav-spacer"></div>
+    </nav>
+
     <div class="container">
         <div class="logo">🤝</div>
         <h1>PTO Buddy</h1>
@@ -189,12 +365,64 @@
 
         <div class="cta-buttons">
             <a href="register.html" class="btn btn-primary">Get Started</a>
-            <a href="#" class="btn btn-secondary">Learn More</a>
+            <a href="learn-more.html" class="btn btn-secondary">Learn More</a>
         </div>
     </div>
 
     <footer>
         &copy; 2026 PTO Buddy. Making workplaces more human.
     </footer>
+
+    <script>
+        const API_URL = window.location.origin;
+
+        // Check if already logged in
+        if (localStorage.getItem('ptobuddy_user')) {
+            window.location.href = 'dashboard.html';
+        }
+
+        function toggleSignIn() {
+            const dropdown = document.getElementById('signInDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const container = document.querySelector('.sign-in-container');
+            if (!container.contains(e.target)) {
+                document.getElementById('signInDropdown').classList.remove('active');
+            }
+        });
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const errorEl = document.getElementById('loginError');
+            errorEl.classList.remove('visible');
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${API_URL}/api/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Login failed');
+                }
+
+                // Store user data and redirect
+                localStorage.setItem('ptobuddy_user', JSON.stringify(data.user));
+                window.location.href = 'dashboard.html';
+            } catch (error) {
+                errorEl.textContent = error.message;
+                errorEl.classList.add('visible');
+            }
+        }
+    </script>
 </body>
 </html>
