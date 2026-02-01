@@ -507,8 +507,9 @@
             <a href="my-donations.html">My Donations</a>
         </div>
         <div class="nav-user">
-            <div class="nav-avatar">JD</div>
-            <span>John Doe</span>
+            <div class="nav-avatar" id="userAvatar">--</div>
+            <span id="userName">Loading...</span>
+            <a href="#" onclick="logout()" style="color: rgba(255,255,255,0.7); margin-left: 15px; font-size: 0.9rem;">Logout</a>
         </div>
     </nav>
 
@@ -517,19 +518,19 @@
         <div class="stats-row">
             <div class="stat-card highlight">
                 <h3>Your Available PTO</h3>
-                <div class="stat-value">40 hrs</div>
+                <div class="stat-value" id="statAvailablePTO">-- hrs</div>
             </div>
             <div class="stat-card">
                 <h3>Hours You've Donated</h3>
-                <div class="stat-value">16 hrs</div>
+                <div class="stat-value" id="statDonatedHours">-- hrs</div>
             </div>
             <div class="stat-card">
                 <h3>People Helped</h3>
-                <div class="stat-value">3</div>
+                <div class="stat-value" id="statPeopleHelped">--</div>
             </div>
             <div class="stat-card">
                 <h3>Active Requests</h3>
-                <div class="stat-value">5</div>
+                <div class="stat-value" id="statActiveRequests">--</div>
             </div>
         </div>
 
@@ -548,144 +549,10 @@
         </div>
 
         <div class="requests-grid" id="requestsGrid">
-            <!-- Request Card 1 -->
-            <div class="request-card" data-urgency="high">
-                <div class="request-header">
-                    <div class="request-user">
-                        <div class="request-avatar">SM</div>
-                        <div>
-                            <div class="request-name">Sarah Miller</div>
-                            <div class="request-dept">Marketing Department</div>
-                        </div>
-                    </div>
-                    <span class="request-urgency urgency-high">Urgent</span>
-                </div>
-                <p class="request-reason">Recovering from unexpected surgery and need additional time for rehabilitation and follow-up appointments.</p>
-                <div class="request-progress">
-                    <div class="progress-header">
-                        <span class="progress-label">Progress</span>
-                        <span class="progress-value">32 / 80 hours</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 40%"></div>
-                    </div>
-                </div>
-                <div class="request-footer">
-                    <span class="request-date">Posted 2 days ago</span>
-                    <button class="btn-donate" onclick="openDonateModal('Sarah Miller', 'SM', 80, 32)">Donate PTO</button>
-                </div>
-            </div>
-
-            <!-- Request Card 2 -->
-            <div class="request-card" data-urgency="medium">
-                <div class="request-header">
-                    <div class="request-user">
-                        <div class="request-avatar">MJ</div>
-                        <div>
-                            <div class="request-name">Michael Johnson</div>
-                            <div class="request-dept">Engineering</div>
-                        </div>
-                    </div>
-                    <span class="request-urgency urgency-medium">Moderate</span>
-                </div>
-                <p class="request-reason">Need time off to care for my elderly parent who recently had a stroke. Coordinating medical care and home assistance.</p>
-                <div class="request-progress">
-                    <div class="progress-header">
-                        <span class="progress-label">Progress</span>
-                        <span class="progress-value">20 / 60 hours</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 33%"></div>
-                    </div>
-                </div>
-                <div class="request-footer">
-                    <span class="request-date">Posted 5 days ago</span>
-                    <button class="btn-donate" onclick="openDonateModal('Michael Johnson', 'MJ', 60, 20)">Donate PTO</button>
-                </div>
-            </div>
-
-            <!-- Request Card 3 -->
-            <div class="request-card" data-urgency="high">
-                <div class="request-header">
-                    <div class="request-user">
-                        <div class="request-avatar">EP</div>
-                        <div>
-                            <div class="request-name">Emily Parker</div>
-                            <div class="request-dept">Customer Success</div>
-                        </div>
-                    </div>
-                    <span class="request-urgency urgency-high">Urgent</span>
-                </div>
-                <p class="request-reason">My home was damaged in recent flooding. Need time to handle insurance claims, repairs, and temporary relocation.</p>
-                <div class="request-progress">
-                    <div class="progress-header">
-                        <span class="progress-label">Progress</span>
-                        <span class="progress-value">45 / 100 hours</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 45%"></div>
-                    </div>
-                </div>
-                <div class="request-footer">
-                    <span class="request-date">Posted 1 day ago</span>
-                    <button class="btn-donate" onclick="openDonateModal('Emily Parker', 'EP', 100, 45)">Donate PTO</button>
-                </div>
-            </div>
-
-            <!-- Request Card 4 -->
-            <div class="request-card" data-urgency="low">
-                <div class="request-header">
-                    <div class="request-user">
-                        <div class="request-avatar">RK</div>
-                        <div>
-                            <div class="request-name">Robert Kim</div>
-                            <div class="request-dept">Finance</div>
-                        </div>
-                    </div>
-                    <span class="request-urgency urgency-low">Standard</span>
-                </div>
-                <p class="request-reason">Adopting a child and would appreciate extra time off to bond with our new family member during the transition period.</p>
-                <div class="request-progress">
-                    <div class="progress-header">
-                        <span class="progress-label">Progress</span>
-                        <span class="progress-value">28 / 40 hours</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 70%"></div>
-                    </div>
-                </div>
-                <div class="request-footer">
-                    <span class="request-date">Posted 1 week ago</span>
-                    <button class="btn-donate" onclick="openDonateModal('Robert Kim', 'RK', 40, 28)">Donate PTO</button>
-                </div>
-            </div>
-
-            <!-- Request Card 5 -->
-            <div class="request-card" data-urgency="medium">
-                <div class="request-header">
-                    <div class="request-user">
-                        <div class="request-avatar">LC</div>
-                        <div>
-                            <div class="request-name">Lisa Chen</div>
-                            <div class="request-dept">Product Design</div>
-                        </div>
-                    </div>
-                    <span class="request-urgency urgency-medium">Moderate</span>
-                </div>
-                <p class="request-reason">Dealing with a serious family illness. Need additional time to travel and be with family during this difficult period.</p>
-                <div class="request-progress">
-                    <div class="progress-header">
-                        <span class="progress-label">Progress</span>
-                        <span class="progress-value">15 / 50 hours</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 30%"></div>
-                    </div>
-                </div>
-                <div class="request-footer">
-                    <span class="request-date">Posted 3 days ago</span>
-                    <button class="btn-donate" onclick="openDonateModal('Lisa Chen', 'LC', 50, 15)">Donate PTO</button>
-                </div>
+            <!-- Requests will be loaded dynamically -->
+            <div class="empty-state" id="loadingState">
+                <div class="empty-state-icon">⏳</div>
+                <h3>Loading requests...</h3>
             </div>
         </div>
     </main>
@@ -706,8 +573,8 @@
                 </div>
             </div>
 
-            <div class="available-hours">
-                You have <strong>40 hours</strong> available to donate
+            <div class="available-hours" id="modalAvailableHours">
+                You have <strong id="modalUserPTO">--</strong> hours available to donate
             </div>
 
             <form onsubmit="submitDonation(event)">
@@ -729,14 +596,135 @@
     </div>
 
     <script>
-        // Current user's available PTO (in a real app, this would come from the backend)
-        let userAvailablePTO = 40;
+        const API_URL = window.location.origin;
+        let currentUser = null;
+        let userAvailablePTO = 0;
+        let allRequests = [];
+        let currentRequestId = null;
 
-        function openDonateModal(name, initials, totalNeeded, received) {
+        // Check authentication
+        function checkAuth() {
+            const userData = localStorage.getItem('ptobuddy_user');
+            if (!userData) {
+                window.location.href = 'login.html';
+                return null;
+            }
+            return JSON.parse(userData);
+        }
+
+        function logout() {
+            localStorage.removeItem('ptobuddy_user');
+            window.location.href = 'login.html';
+        }
+
+        // Initialize page
+        async function init() {
+            currentUser = checkAuth();
+            if (!currentUser) return;
+
+            // Update nav with user info
+            const initials = (currentUser.first_name[0] + currentUser.last_name[0]).toUpperCase();
+            document.getElementById('userAvatar').textContent = initials;
+            document.getElementById('userName').textContent = `${currentUser.first_name} ${currentUser.last_name}`;
+
+            // Load data
+            await Promise.all([loadStats(), loadRequests()]);
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/users/${currentUser.id}/stats`);
+                const stats = await response.json();
+
+                userAvailablePTO = stats.availablePTO;
+                document.getElementById('statAvailablePTO').textContent = `${stats.availablePTO} hrs`;
+                document.getElementById('statDonatedHours').textContent = `${stats.totalDonated} hrs`;
+                document.getElementById('statPeopleHelped').textContent = stats.peopleHelped;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        async function loadRequests() {
+            try {
+                const response = await fetch(`${API_URL}/api/requests`);
+                allRequests = await response.json();
+
+                document.getElementById('statActiveRequests').textContent = allRequests.length;
+                renderRequests(allRequests);
+            } catch (error) {
+                console.error('Failed to load requests:', error);
+                document.getElementById('requestsGrid').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">😕</div>
+                        <h3>Failed to load requests</h3>
+                        <p>Please try refreshing the page.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderRequests(requests) {
+            const grid = document.getElementById('requestsGrid');
+
+            if (requests.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🎉</div>
+                        <h3>No active requests</h3>
+                        <p>There are no PTO support requests at this time.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = requests.map(req => {
+                const initials = (req.first_name[0] + req.last_name[0]).toUpperCase();
+                const progress = req.hours_needed > 0 ? Math.round((req.hours_received / req.hours_needed) * 100) : 0;
+                const urgencyClass = req.urgency === 'high' ? 'urgency-high' : req.urgency === 'medium' ? 'urgency-medium' : 'urgency-low';
+                const urgencyLabel = req.urgency === 'high' ? 'Urgent' : req.urgency === 'medium' ? 'Moderate' : 'Standard';
+                const date = new Date(req.created_at);
+                const daysAgo = Math.floor((Date.now() - date) / (1000 * 60 * 60 * 24));
+                const dateText = daysAgo === 0 ? 'Posted today' : daysAgo === 1 ? 'Posted 1 day ago' : `Posted ${daysAgo} days ago`;
+
+                return `
+                    <div class="request-card" data-urgency="${req.urgency}" data-id="${req.id}">
+                        <div class="request-header">
+                            <div class="request-user">
+                                <div class="request-avatar">${initials}</div>
+                                <div>
+                                    <div class="request-name">${req.first_name} ${req.last_name}</div>
+                                    <div class="request-dept">${req.category}</div>
+                                </div>
+                            </div>
+                            <span class="request-urgency ${urgencyClass}">${urgencyLabel}</span>
+                        </div>
+                        <p class="request-reason">${req.reason}</p>
+                        <div class="request-progress">
+                            <div class="progress-header">
+                                <span class="progress-label">Progress</span>
+                                <span class="progress-value">${req.hours_received} / ${req.hours_needed} hours</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+                        <div class="request-footer">
+                            <span class="request-date">${dateText}</span>
+                            <button class="btn-donate" onclick="openDonateModal(${req.id}, '${req.first_name} ${req.last_name}', '${initials}', ${req.hours_needed}, ${req.hours_received})">Donate PTO</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openDonateModal(requestId, name, initials, totalNeeded, received) {
+            currentRequestId = requestId;
             const needed = totalNeeded - received;
             document.getElementById('modalName').textContent = name;
             document.getElementById('modalAvatar').textContent = initials;
             document.getElementById('modalNeeded').textContent = needed;
+            document.getElementById('modalUserPTO').textContent = userAvailablePTO;
             document.getElementById('donateHours').max = Math.min(userAvailablePTO, needed);
             document.getElementById('donateHours').value = '';
             document.getElementById('donateMessage').value = '';
@@ -745,9 +733,10 @@
 
         function closeDonateModal() {
             document.getElementById('donateModal').classList.remove('active');
+            currentRequestId = null;
         }
 
-        function submitDonation(event) {
+        async function submitDonation(event) {
             event.preventDefault();
             const hours = parseInt(document.getElementById('donateHours').value);
             const message = document.getElementById('donateMessage').value;
@@ -763,38 +752,46 @@
                 return;
             }
 
-            // In a real app, this would submit to a backend
-            console.log('Donation:', { hours, message, recipientName });
+            try {
+                const response = await fetch(`${API_URL}/api/donations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        donorId: currentUser.id,
+                        requestId: currentRequestId,
+                        hours: hours,
+                        message: message
+                    })
+                });
 
-            // Update user's available PTO
-            userAvailablePTO -= hours;
+                const data = await response.json();
 
-            // Show success message
-            alert(`Thank you for donating ${hours} hours to ${recipientName}! Your generosity makes a difference.`);
+                if (!response.ok) {
+                    throw new Error(data.error || 'Donation failed');
+                }
 
-            closeDonateModal();
+                alert(`Thank you for donating ${hours} hours to ${recipientName}! Your generosity makes a difference.`);
+                closeDonateModal();
 
-            // Refresh the page to show updated stats (in a real app, this would update dynamically)
-            // location.reload();
+                // Reload data
+                await Promise.all([loadStats(), loadRequests()]);
+            } catch (error) {
+                alert('Donation failed: ' + error.message);
+            }
         }
 
         function filterRequests(filter) {
-            // Update active tab
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
 
-            const cards = document.querySelectorAll('.request-card');
+            let filtered = allRequests;
+            if (filter === 'urgent') {
+                filtered = allRequests.filter(r => r.urgency === 'high');
+            } else if (filter === 'recent') {
+                filtered = [...allRequests].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            }
 
-            cards.forEach(card => {
-                if (filter === 'all') {
-                    card.style.display = 'block';
-                } else if (filter === 'urgent') {
-                    card.style.display = card.dataset.urgency === 'high' ? 'block' : 'none';
-                } else if (filter === 'recent') {
-                    // In a real app, this would filter by date
-                    card.style.display = 'block';
-                }
-            });
+            renderRequests(filtered);
         }
 
         // Close modal when clicking outside
@@ -810,6 +807,9 @@
                 closeDonateModal();
             }
         });
+
+        // Initialize on page load
+        init();
     </script>
 </body>
 </html>

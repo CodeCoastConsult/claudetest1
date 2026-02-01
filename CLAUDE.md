@@ -8,13 +8,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Development Commands
 
-- Open `index.html` in a browser to view the title page
+```bash
+# Install dependencies
+npm install
+
+# Start the server
+npm start
+
+# Server runs at http://localhost:3000
+```
 
 ## Project Structure
 
 ```
 /
+├── server.js            # Express.js backend server
+├── package.json         # Node.js dependencies
 ├── index.html           # Main title/landing page
+├── login.html           # User login page
 ├── register.html        # User registration page
 ├── dashboard.html       # Main dashboard with PTO requests
 ├── request-support.html # Form to request PTO support
@@ -22,6 +33,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 ├── CLAUDE.md            # Claude Code guidance
 └── README.md            # Project readme
 ```
+
+## Backend API
+
+The server uses Express.js with SQLite database. Key endpoints:
+
+- `POST /api/register` - Register new user
+- `POST /api/login` - User authentication
+- `GET /api/requests` - Get all active PTO requests
+- `POST /api/requests` - Create a support request
+- `POST /api/donations` - Make a PTO donation
+- `GET /api/users/:id/donations` - Get user's donation history
+- `GET /api/users/:id/stats` - Get user's stats
 
 ## User Workflow
 

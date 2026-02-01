@@ -391,8 +391,9 @@
             <a href="my-donations.html">My Donations</a>
         </div>
         <div class="nav-user">
-            <div class="nav-avatar">JD</div>
-            <span>John Doe</span>
+            <div class="nav-avatar" id="userAvatar">--</div>
+            <span id="userName">Loading...</span>
+            <a href="#" onclick="logout()" style="color: rgba(255,255,255,0.7); margin-left: 15px; font-size: 0.9rem;">Logout</a>
         </div>
     </nav>
 
@@ -514,6 +515,35 @@
     </main>
 
     <script>
+        const API_URL = window.location.origin;
+        let currentUser = null;
+
+        // Check authentication
+        function checkAuth() {
+            const userData = localStorage.getItem('ptobuddy_user');
+            if (!userData) {
+                window.location.href = 'login.html';
+                return null;
+            }
+            return JSON.parse(userData);
+        }
+
+        function logout() {
+            localStorage.removeItem('ptobuddy_user');
+            window.location.href = 'login.html';
+        }
+
+        // Initialize page
+        function init() {
+            currentUser = checkAuth();
+            if (!currentUser) return;
+
+            // Update nav with user info
+            const initials = (currentUser.first_name[0] + currentUser.last_name[0]).toUpperCase();
+            document.getElementById('userAvatar').textContent = initials;
+            document.getElementById('userName').textContent = `${currentUser.first_name} ${currentUser.last_name}`;
+        }
+
         // Set minimum date to today
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('startDate').min = today;
@@ -524,25 +554,43 @@
             document.getElementById('endDate').min = this.value;
         });
 
-        function submitRequest(event) {
+        async function submitRequest(event) {
             event.preventDefault();
 
             // Collect form data
             const formData = {
-                hoursNeeded: document.getElementById('hoursNeeded').value,
+                userId: currentUser.id,
+                hoursNeeded: parseInt(document.getElementById('hoursNeeded').value),
                 urgency: document.querySelector('input[name="urgency"]:checked').value,
                 category: document.getElementById('category').value,
                 reason: document.getElementById('reason').value,
                 startDate: document.getElementById('startDate').value,
-                endDate: document.getElementById('endDate').value
+                endDate: document.getElementById('endDate').value || null
             };
 
-            console.log('Support Request:', formData);
+            try {
+                const response = await fetch(`${API_URL}/api/requests`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
 
-            // Hide form and show success message
-            document.getElementById('requestForm').style.display = 'none';
-            document.getElementById('successMessage').classList.add('active');
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to submit request');
+                }
+
+                // Hide form and show success message
+                document.getElementById('requestForm').style.display = 'none';
+                document.getElementById('successMessage').classList.add('active');
+            } catch (error) {
+                alert('Failed to submit request: ' + error.message);
+            }
         }
+
+        // Initialize on page load
+        init();
     </script>
 </body>
 </html>
