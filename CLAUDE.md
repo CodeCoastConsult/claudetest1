@@ -15,6 +15,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 ```
 /
 ├── index.html      # Main title/landing page
+├── register.html   # User registration page
 ├── CLAUDE.md       # Claude Code guidance
 └── README.md       # Project readme
 ```
