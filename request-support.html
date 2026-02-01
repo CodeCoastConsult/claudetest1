@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Support - PTO Buddy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #fff;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+
+        .nav-avatar {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        /* Form Card */
+        .form-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .form-group .label-hint {
+            font-weight: 400;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .required {
+            color: #e74c3c;
+        }
+
+        /* Urgency Options */
+        .urgency-options {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .urgency-option {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .urgency-option input {
+            display: none;
+        }
+
+        .urgency-option label {
+            display: block;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .urgency-option label:hover {
+            border-color: #667eea;
+        }
+
+        .urgency-option input:checked + label {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .urgency-option .urgency-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .urgency-option .urgency-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .urgency-option .urgency-desc {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .info-box-icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .info-box-text {
+            color: #555;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        /* Privacy Notice */
+        .privacy-notice {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .privacy-notice input {
+            margin-top: 3px;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .privacy-notice label {
+            color: #555;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9ff;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding-top: 1rem;
+            border-top: 2px solid #f0f0f0;
+            margin-top: 2rem;
+        }
+
+        /* Success Message */
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .success-message h2 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+
+        .success-message p {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .urgency-options {
+                flex-direction: column;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .form-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-brand">
+            <span>🤝</span>
+            <span>PTO Buddy</span>
+        </a>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="request-support.html" class="active">Request Support</a>
+            <a href="my-donations.html">My Donations</a>
+        </div>
+        <div class="nav-user">
+            <div class="nav-avatar">JD</div>
+            <span>John Doe</span>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Request PTO Support</h1>
+            <p>Let your colleagues know you could use some extra time</p>
+        </div>
+
+        <div class="form-card">
+            <!-- Request Form -->
+            <form id="requestForm" onsubmit="submitRequest(event)">
+                <div class="info-box">
+                    <span class="info-box-icon">💡</span>
+                    <p class="info-box-text">Your request will be shared with colleagues who have opted to donate PTO. You control how much detail to share about your situation.</p>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="form-section-title">Request Details</h3>
+
+                    <div class="form-group">
+                        <label for="hoursNeeded">Hours Needed <span class="required">*</span></label>
+                        <input type="number" id="hoursNeeded" name="hoursNeeded" min="1" max="500" required placeholder="How many hours do you need?">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Urgency Level <span class="required">*</span></label>
+                        <div class="urgency-options">
+                            <div class="urgency-option">
+                                <input type="radio" id="urgencyHigh" name="urgency" value="high" required>
+                                <label for="urgencyHigh">
+                                    <div class="urgency-icon">🔴</div>
+                                    <div class="urgency-label">Urgent</div>
+                                    <div class="urgency-desc">Need support ASAP</div>
+                                </label>
+                            </div>
+                            <div class="urgency-option">
+                                <input type="radio" id="urgencyMedium" name="urgency" value="medium">
+                                <label for="urgencyMedium">
+                                    <div class="urgency-icon">🟡</div>
+                                    <div class="urgency-label">Moderate</div>
+                                    <div class="urgency-desc">Within 2 weeks</div>
+                                </label>
+                            </div>
+                            <div class="urgency-option">
+                                <input type="radio" id="urgencyLow" name="urgency" value="low">
+                                <label for="urgencyLow">
+                                    <div class="urgency-icon">🟢</div>
+                                    <div class="urgency-label">Standard</div>
+                                    <div class="urgency-desc">Flexible timeline</div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Category <span class="required">*</span></label>
+                        <select id="category" name="category" required>
+                            <option value="">Select a category...</option>
+                            <option value="medical">Medical / Health</option>
+                            <option value="family">Family Care</option>
+                            <option value="bereavement">Bereavement</option>
+                            <option value="emergency">Emergency / Natural Disaster</option>
+                            <option value="parental">Parental / Adoption</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reason">
+                            Your Situation
+                            <span class="label-hint">(Share as much or as little as you're comfortable with)</span>
+                            <span class="required">*</span>
+                        </label>
+                        <textarea id="reason" name="reason" required placeholder="Briefly describe why you need additional PTO support..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="form-section-title">Timeline</h3>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="startDate">When do you need time off? <span class="required">*</span></label>
+                            <input type="date" id="startDate" name="startDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">Expected return date</label>
+                            <input type="date" id="endDate" name="endDate">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3 class="form-section-title">Privacy & Consent</h3>
+
+                    <div class="privacy-notice">
+                        <input type="checkbox" id="consent" name="consent" required>
+                        <label for="consent">
+                            I understand that my request will be visible to colleagues who have opted to donate PTO. I consent to sharing the information provided above for the purpose of receiving PTO donations.
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="dashboard.html" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Submit Request</button>
+                </div>
+            </form>
+
+            <!-- Success Message -->
+            <div class="success-message" id="successMessage">
+                <div class="success-icon">✅</div>
+                <h2>Request Submitted Successfully!</h2>
+                <p>Your PTO support request has been posted. Your colleagues who have opted to donate will be able to see your request and contribute hours. You'll be notified when you receive donations.</p>
+                <a href="dashboard.html" class="btn btn-primary">View Dashboard</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Set minimum date to today
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('startDate').min = today;
+        document.getElementById('endDate').min = today;
+
+        // Update end date min when start date changes
+        document.getElementById('startDate').addEventListener('change', function() {
+            document.getElementById('endDate').min = this.value;
+        });
+
+        function submitRequest(event) {
+            event.preventDefault();
+
+            // Collect form data
+            const formData = {
+                hoursNeeded: document.getElementById('hoursNeeded').value,
+                urgency: document.querySelector('input[name="urgency"]:checked').value,
+                category: document.getElementById('category').value,
+                reason: document.getElementById('reason').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value
+            };
+
+            console.log('Support Request:', formData);
+
+            // Hide form and show success message
+            document.getElementById('requestForm').style.display = 'none';
+            document.getElementById('successMessage').classList.add('active');
+        }
+    </script>
+</body>
+</html>
