@@ -335,8 +335,9 @@
             <a href="my-donations.html" class="active">My Donations</a>
         </div>
         <div class="nav-user">
-            <div class="nav-avatar">JD</div>
-            <span>John Doe</span>
+            <div class="nav-avatar" id="userAvatar">--</div>
+            <span id="userName">Loading...</span>
+            <a href="#" onclick="logout()" style="color: rgba(255,255,255,0.7); margin-left: 15px; font-size: 0.9rem;">Logout</a>
         </div>
     </nav>
 
@@ -350,15 +351,15 @@
         <div class="stats-row">
             <div class="stat-card highlight">
                 <h3>Total Hours Donated</h3>
-                <div class="stat-value">16</div>
+                <div class="stat-value" id="statTotalDonated">--</div>
             </div>
             <div class="stat-card">
                 <h3>People Helped</h3>
-                <div class="stat-value">3</div>
+                <div class="stat-value" id="statPeopleHelped">--</div>
             </div>
             <div class="stat-card">
                 <h3>Available to Donate</h3>
-                <div class="stat-value">40</div>
+                <div class="stat-value" id="statAvailable">--</div>
             </div>
         </div>
 
@@ -367,54 +368,133 @@
             <div class="section-header">
                 <h2>Donation History</h2>
             </div>
-            <ul class="donation-list">
+            <ul class="donation-list" id="donationList">
                 <li class="donation-item">
-                    <div class="donation-avatar">SM</div>
-                    <div class="donation-info">
-                        <div class="donation-recipient">Sarah Miller</div>
-                        <div class="donation-message">"Wishing you a speedy recovery!"</div>
-                        <div class="donation-date">January 28, 2026</div>
-                    </div>
-                    <div class="donation-hours">
-                        <div class="hours-value">8</div>
-                        <div class="hours-label">hours</div>
-                    </div>
-                </li>
-                <li class="donation-item">
-                    <div class="donation-avatar">MJ</div>
-                    <div class="donation-info">
-                        <div class="donation-recipient">Michael Johnson</div>
-                        <div class="donation-message">"Take care of your family. We're here for you."</div>
-                        <div class="donation-date">January 15, 2026</div>
-                    </div>
-                    <div class="donation-hours">
-                        <div class="hours-value">4</div>
-                        <div class="hours-label">hours</div>
-                    </div>
-                </li>
-                <li class="donation-item">
-                    <div class="donation-avatar">RK</div>
-                    <div class="donation-info">
-                        <div class="donation-recipient">Robert Kim</div>
-                        <div class="donation-message">"Congratulations on your growing family!"</div>
-                        <div class="donation-date">January 5, 2026</div>
-                    </div>
-                    <div class="donation-hours">
-                        <div class="hours-value">4</div>
-                        <div class="hours-label">hours</div>
+                    <div class="donation-info" style="text-align: center; width: 100%;">
+                        Loading donations...
                     </div>
                 </li>
             </ul>
         </div>
 
         <!-- Impact Section -->
-        <div class="impact-section">
+        <div class="impact-section" id="impactSection" style="display: none;">
             <div class="impact-message">
                 <div class="impact-icon">💜</div>
                 <h3>You're Making a Difference!</h3>
-                <p>Your 16 hours of donated PTO have helped 3 colleagues during challenging times. Every hour you share helps build a stronger, more supportive workplace community. Thank you for being a PTO Buddy!</p>
+                <p id="impactText">Your donated PTO hours have helped colleagues during challenging times. Every hour you share helps build a stronger, more supportive workplace community. Thank you for being a PTO Buddy!</p>
             </div>
         </div>
     </main>
+
+    <script>
+        const API_URL = window.location.origin;
+        let currentUser = null;
+
+        // Check authentication
+        function checkAuth() {
+            const userData = localStorage.getItem('ptobuddy_user');
+            if (!userData) {
+                window.location.href = 'login.html';
+                return null;
+            }
+            return JSON.parse(userData);
+        }
+
+        function logout() {
+            localStorage.removeItem('ptobuddy_user');
+            window.location.href = 'login.html';
+        }
+
+        // Initialize page
+        async function init() {
+            currentUser = checkAuth();
+            if (!currentUser) return;
+
+            // Update nav with user info
+            const initials = (currentUser.first_name[0] + currentUser.last_name[0]).toUpperCase();
+            document.getElementById('userAvatar').textContent = initials;
+            document.getElementById('userName').textContent = `${currentUser.first_name} ${currentUser.last_name}`;
+
+            // Load data
+            await Promise.all([loadStats(), loadDonations()]);
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/users/${currentUser.id}/stats`);
+                const stats = await response.json();
+
+                document.getElementById('statTotalDonated').textContent = stats.totalDonated;
+                document.getElementById('statPeopleHelped').textContent = stats.peopleHelped;
+                document.getElementById('statAvailable').textContent = stats.availablePTO;
+
+                // Update impact section
+                if (stats.totalDonated > 0) {
+                    document.getElementById('impactSection').style.display = 'block';
+                    document.getElementById('impactText').textContent =
+                        `Your ${stats.totalDonated} hours of donated PTO have helped ${stats.peopleHelped} colleague${stats.peopleHelped !== 1 ? 's' : ''} during challenging times. Every hour you share helps build a stronger, more supportive workplace community. Thank you for being a PTO Buddy!`;
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        async function loadDonations() {
+            try {
+                const response = await fetch(`${API_URL}/api/users/${currentUser.id}/donations`);
+                const donations = await response.json();
+
+                const list = document.getElementById('donationList');
+
+                if (donations.length === 0) {
+                    list.innerHTML = `
+                        <li class="empty-state">
+                            <div class="empty-state-icon">🎁</div>
+                            <h3>No donations yet</h3>
+                            <p>When you donate PTO to colleagues, your contributions will appear here.</p>
+                            <a href="dashboard.html" class="btn btn-primary">Browse Requests</a>
+                        </li>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = donations.map(donation => {
+                    const initials = (donation.recipient_first_name[0] + donation.recipient_last_name[0]).toUpperCase();
+                    const date = new Date(donation.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'long', day: 'numeric'
+                    });
+                    const message = donation.message ? `"${donation.message}"` : '<em>No message</em>';
+
+                    return `
+                        <li class="donation-item">
+                            <div class="donation-avatar">${initials}</div>
+                            <div class="donation-info">
+                                <div class="donation-recipient">${donation.recipient_first_name} ${donation.recipient_last_name}</div>
+                                <div class="donation-message">${message}</div>
+                                <div class="donation-date">${date}</div>
+                            </div>
+                            <div class="donation-hours">
+                                <div class="hours-value">${donation.hours}</div>
+                                <div class="hours-label">hours</div>
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Failed to load donations:', error);
+                document.getElementById('donationList').innerHTML = `
+                    <li class="donation-item">
+                        <div class="donation-info" style="text-align: center; width: 100%; color: #dc2626;">
+                            Failed to load donations. Please refresh the page.
+                        </div>
+                    </li>
+                `;
+            }
+        }
+
+        // Initialize on page load
+        init();
+    </script>
 </body>
 </html>

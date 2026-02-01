@@ -315,12 +315,14 @@
             <button type="submit" class="btn-register">Create Account</button>
 
             <div class="login-link">
-                Already have an account? <a href="#">Sign in</a>
+                Already have an account? <a href="login.html">Sign in</a>
             </div>
         </form>
     </div>
 
     <script>
+        const API_URL = window.location.origin;
+
         function togglePtoAmount() {
             const canDonate = document.getElementById('canDonate').checked;
             const ptoAmountGroup = document.getElementById('ptoAmountGroup');
@@ -336,7 +338,7 @@
             }
         }
 
-        function handleSubmit(event) {
+        async function handleSubmit(event) {
             event.preventDefault();
 
             const canDonate = document.getElementById('canDonate').checked;
@@ -369,15 +371,33 @@
                 email: document.getElementById('email').value,
                 phone: document.getElementById('phone').value,
                 username: document.getElementById('username').value,
+                password: password,
                 canDonate: canDonate,
                 needSupport: needSupport,
-                ptoHours: canDonate ? document.getElementById('ptoHours').value : null
+                ptoHours: canDonate ? parseInt(document.getElementById('ptoHours').value) : 0
             };
 
-            console.log('Registration data:', formData);
+            try {
+                const response = await fetch(`${API_URL}/api/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
 
-            // Show success message (in a real app, this would submit to a server)
-            alert('Registration successful! Welcome to PTO Buddy, ' + formData.firstName + '!');
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Registration failed');
+                }
+
+                // Store user data for auto-login
+                localStorage.setItem('ptobuddy_user', JSON.stringify(data.user));
+
+                // Redirect directly to dashboard
+                window.location.href = 'dashboard.html';
+            } catch (error) {
+                alert('Registration failed: ' + error.message);
+            }
         }
     </script>
 </body>
