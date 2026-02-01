@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PTO Buddy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+
+        .nav-avatar {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Stats Cards */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card h3 {
+            color: #888;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-card.highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .stat-card.highlight h3,
+        .stat-card.highlight .stat-value {
+            color: #fff;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header h2 {
+            color: #333;
+            font-size: 1.5rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f7fb;
+        }
+
+        /* Request Cards */
+        .requests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .request-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .request-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .request-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .request-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .request-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .request-dept {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .request-urgency {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .urgency-high {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .urgency-medium {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .urgency-low {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .request-reason {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .request-progress {
+            margin-bottom: 1rem;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .progress-label {
+            color: #888;
+        }
+
+        .progress-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .request-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .request-date {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .btn-donate {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 0.5rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-donate:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #888;
+            padding: 5px;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .donate-recipient {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 1rem;
+            background: #f8f9ff;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .available-hours {
+            background: #d1fae5;
+            color: #059669;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #888;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 0;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #888;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .requests-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-brand">
+            <span>🤝</span>
+            <span>PTO Buddy</span>
+        </a>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="request-support.html">Request Support</a>
+            <a href="my-donations.html">My Donations</a>
+        </div>
+        <div class="nav-user">
+            <div class="nav-avatar">JD</div>
+            <span>John Doe</span>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Stats Row -->
+        <div class="stats-row">
+            <div class="stat-card highlight">
+                <h3>Your Available PTO</h3>
+                <div class="stat-value">40 hrs</div>
+            </div>
+            <div class="stat-card">
+                <h3>Hours You've Donated</h3>
+                <div class="stat-value">16 hrs</div>
+            </div>
+            <div class="stat-card">
+                <h3>People Helped</h3>
+                <div class="stat-value">3</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Requests</h3>
+                <div class="stat-value">5</div>
+            </div>
+        </div>
+
+        <!-- Requests Section -->
+        <div class="section-header">
+            <h2>PTO Support Requests</h2>
+            <a href="request-support.html" class="btn btn-primary">
+                <span>+</span> Request Support
+            </a>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="filterRequests('all')">All Requests</button>
+            <button class="tab" onclick="filterRequests('urgent')">Urgent</button>
+            <button class="tab" onclick="filterRequests('recent')">Recently Added</button>
+        </div>
+
+        <div class="requests-grid" id="requestsGrid">
+            <!-- Request Card 1 -->
+            <div class="request-card" data-urgency="high">
+                <div class="request-header">
+                    <div class="request-user">
+                        <div class="request-avatar">SM</div>
+                        <div>
+                            <div class="request-name">Sarah Miller</div>
+                            <div class="request-dept">Marketing Department</div>
+                        </div>
+                    </div>
+                    <span class="request-urgency urgency-high">Urgent</span>
+                </div>
+                <p class="request-reason">Recovering from unexpected surgery and need additional time for rehabilitation and follow-up appointments.</p>
+                <div class="request-progress">
+                    <div class="progress-header">
+                        <span class="progress-label">Progress</span>
+                        <span class="progress-value">32 / 80 hours</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 40%"></div>
+                    </div>
+                </div>
+                <div class="request-footer">
+                    <span class="request-date">Posted 2 days ago</span>
+                    <button class="btn-donate" onclick="openDonateModal('Sarah Miller', 'SM', 80, 32)">Donate PTO</button>
+                </div>
+            </div>
+
+            <!-- Request Card 2 -->
+            <div class="request-card" data-urgency="medium">
+                <div class="request-header">
+                    <div class="request-user">
+                        <div class="request-avatar">MJ</div>
+                        <div>
+                            <div class="request-name">Michael Johnson</div>
+                            <div class="request-dept">Engineering</div>
+                        </div>
+                    </div>
+                    <span class="request-urgency urgency-medium">Moderate</span>
+                </div>
+                <p class="request-reason">Need time off to care for my elderly parent who recently had a stroke. Coordinating medical care and home assistance.</p>
+                <div class="request-progress">
+                    <div class="progress-header">
+                        <span class="progress-label">Progress</span>
+                        <span class="progress-value">20 / 60 hours</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 33%"></div>
+                    </div>
+                </div>
+                <div class="request-footer">
+                    <span class="request-date">Posted 5 days ago</span>
+                    <button class="btn-donate" onclick="openDonateModal('Michael Johnson', 'MJ', 60, 20)">Donate PTO</button>
+                </div>
+            </div>
+
+            <!-- Request Card 3 -->
+            <div class="request-card" data-urgency="high">
+                <div class="request-header">
+                    <div class="request-user">
+                        <div class="request-avatar">EP</div>
+                        <div>
+                            <div class="request-name">Emily Parker</div>
+                            <div class="request-dept">Customer Success</div>
+                        </div>
+                    </div>
+                    <span class="request-urgency urgency-high">Urgent</span>
+                </div>
+                <p class="request-reason">My home was damaged in recent flooding. Need time to handle insurance claims, repairs, and temporary relocation.</p>
+                <div class="request-progress">
+                    <div class="progress-header">
+                        <span class="progress-label">Progress</span>
+                        <span class="progress-value">45 / 100 hours</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 45%"></div>
+                    </div>
+                </div>
+                <div class="request-footer">
+                    <span class="request-date">Posted 1 day ago</span>
+                    <button class="btn-donate" onclick="openDonateModal('Emily Parker', 'EP', 100, 45)">Donate PTO</button>
+                </div>
+            </div>
+
+            <!-- Request Card 4 -->
+            <div class="request-card" data-urgency="low">
+                <div class="request-header">
+                    <div class="request-user">
+                        <div class="request-avatar">RK</div>
+                        <div>
+                            <div class="request-name">Robert Kim</div>
+                            <div class="request-dept">Finance</div>
+                        </div>
+                    </div>
+                    <span class="request-urgency urgency-low">Standard</span>
+                </div>
+                <p class="request-reason">Adopting a child and would appreciate extra time off to bond with our new family member during the transition period.</p>
+                <div class="request-progress">
+                    <div class="progress-header">
+                        <span class="progress-label">Progress</span>
+                        <span class="progress-value">28 / 40 hours</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 70%"></div>
+                    </div>
+                </div>
+                <div class="request-footer">
+                    <span class="request-date">Posted 1 week ago</span>
+                    <button class="btn-donate" onclick="openDonateModal('Robert Kim', 'RK', 40, 28)">Donate PTO</button>
+                </div>
+            </div>
+
+            <!-- Request Card 5 -->
+            <div class="request-card" data-urgency="medium">
+                <div class="request-header">
+                    <div class="request-user">
+                        <div class="request-avatar">LC</div>
+                        <div>
+                            <div class="request-name">Lisa Chen</div>
+                            <div class="request-dept">Product Design</div>
+                        </div>
+                    </div>
+                    <span class="request-urgency urgency-medium">Moderate</span>
+                </div>
+                <p class="request-reason">Dealing with a serious family illness. Need additional time to travel and be with family during this difficult period.</p>
+                <div class="request-progress">
+                    <div class="progress-header">
+                        <span class="progress-label">Progress</span>
+                        <span class="progress-value">15 / 50 hours</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 30%"></div>
+                    </div>
+                </div>
+                <div class="request-footer">
+                    <span class="request-date">Posted 3 days ago</span>
+                    <button class="btn-donate" onclick="openDonateModal('Lisa Chen', 'LC', 50, 15)">Donate PTO</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Donate Modal -->
+    <div class="modal-overlay" id="donateModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Donate PTO Hours</h2>
+                <button class="modal-close" onclick="closeDonateModal()">&times;</button>
+            </div>
+
+            <div class="donate-recipient" id="donateRecipient">
+                <div class="request-avatar" id="modalAvatar">SM</div>
+                <div>
+                    <div class="request-name" id="modalName">Sarah Miller</div>
+                    <div class="request-dept">Requesting <span id="modalNeeded">48</span> more hours</div>
+                </div>
+            </div>
+
+            <div class="available-hours">
+                You have <strong>40 hours</strong> available to donate
+            </div>
+
+            <form onsubmit="submitDonation(event)">
+                <div class="form-group">
+                    <label for="donateHours">Hours to Donate *</label>
+                    <input type="number" id="donateHours" min="1" max="40" required placeholder="Enter hours (max 40)">
+                </div>
+
+                <div class="form-group">
+                    <label for="donateMessage">Message (optional)</label>
+                    <textarea id="donateMessage" placeholder="Add a supportive message for your colleague..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Confirm Donation
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Current user's available PTO (in a real app, this would come from the backend)
+        let userAvailablePTO = 40;
+
+        function openDonateModal(name, initials, totalNeeded, received) {
+            const needed = totalNeeded - received;
+            document.getElementById('modalName').textContent = name;
+            document.getElementById('modalAvatar').textContent = initials;
+            document.getElementById('modalNeeded').textContent = needed;
+            document.getElementById('donateHours').max = Math.min(userAvailablePTO, needed);
+            document.getElementById('donateHours').value = '';
+            document.getElementById('donateMessage').value = '';
+            document.getElementById('donateModal').classList.add('active');
+        }
+
+        function closeDonateModal() {
+            document.getElementById('donateModal').classList.remove('active');
+        }
+
+        function submitDonation(event) {
+            event.preventDefault();
+            const hours = parseInt(document.getElementById('donateHours').value);
+            const message = document.getElementById('donateMessage').value;
+            const recipientName = document.getElementById('modalName').textContent;
+
+            if (hours > userAvailablePTO) {
+                alert('You cannot donate more hours than you have available.');
+                return;
+            }
+
+            if (hours < 1) {
+                alert('Please enter at least 1 hour to donate.');
+                return;
+            }
+
+            // In a real app, this would submit to a backend
+            console.log('Donation:', { hours, message, recipientName });
+
+            // Update user's available PTO
+            userAvailablePTO -= hours;
+
+            // Show success message
+            alert(`Thank you for donating ${hours} hours to ${recipientName}! Your generosity makes a difference.`);
+
+            closeDonateModal();
+
+            // Refresh the page to show updated stats (in a real app, this would update dynamically)
+            // location.reload();
+        }
+
+        function filterRequests(filter) {
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const cards = document.querySelectorAll('.request-card');
+
+            cards.forEach(card => {
+                if (filter === 'all') {
+                    card.style.display = 'block';
+                } else if (filter === 'urgent') {
+                    card.style.display = card.dataset.urgency === 'high' ? 'block' : 'none';
+                } else if (filter === 'recent') {
+                    // In a real app, this would filter by date
+                    card.style.display = 'block';
+                }
+            });
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('donateModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDonateModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDonateModal();
+            }
+        });
+    </script>
+</body>
+</html>

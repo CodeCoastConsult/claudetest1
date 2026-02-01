@@ -14,11 +14,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ```
 /
-├── index.html      # Main title/landing page
-├── register.html   # User registration page
-├── CLAUDE.md       # Claude Code guidance
-└── README.md       # Project readme
+├── index.html           # Main title/landing page
+├── register.html        # User registration page
+├── dashboard.html       # Main dashboard with PTO requests
+├── request-support.html # Form to request PTO support
+├── my-donations.html    # User's donation history
+├── CLAUDE.md            # Claude Code guidance
+└── README.md            # Project readme
 ```
+
+## User Workflow
+
+1. **Landing Page** (`index.html`) - Users learn about PTO Buddy
+2. **Registration** (`register.html`) - Users create account, indicate if donor/recipient
+3. **Dashboard** (`dashboard.html`) - View active PTO requests from colleagues
+4. **Request Support** (`request-support.html`) - Submit a request for PTO donations
+5. **Donate PTO** - Click "Donate PTO" on any request card to give hours
+6. **My Donations** (`my-donations.html`) - Track donation history and impact
 
 ## Code Style Guidelines
 
