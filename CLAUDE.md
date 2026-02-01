@@ -4,28 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Overview
 
-This is a test repository for Claude Code.
+**PTO Buddy** is an application that allows employees to donate their extra PTO (paid time off) to colleagues who need it. The app builds workplace community by connecting those with unused time off to those facing unexpected life challenges.
 
 ## Development Commands
 
-<!-- Add your common commands here, for example: -->
-<!-- - `npm install` - Install dependencies -->
-<!-- - `npm run build` - Build the project -->
-<!-- - `npm test` - Run tests -->
-<!-- - `npm run lint` - Run linter -->
+- Open `index.html` in a browser to view the title page
 
 ## Project Structure
 
-<!-- Describe your project's directory structure here -->
+```
+/
+├── index.html      # Main title/landing page
+├── CLAUDE.md       # Claude Code guidance
+└── README.md       # Project readme
+```
 
 ## Code Style Guidelines
 
-<!-- Add any coding conventions or style guidelines here -->
-
-## Testing
-
-<!-- Describe how to run tests and any testing conventions -->
+- Use semantic HTML5 elements
+- CSS should be mobile-responsive
+- Follow BEM naming conventions for CSS classes when scaling up
 
 ## Additional Notes
 
-<!-- Add any other information that would help Claude understand your project -->
+Key features of PTO Buddy:
+- **Donate PTO** - Employees can give unused hours to colleagues
+- **Request Support** - Those in need can request PTO donations
+- **Build Community** - Strengthens organizational bonds
