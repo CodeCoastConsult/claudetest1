@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Learn More - PTO Buddy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f7fb;
+            color: #333;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            text-align: center;
+            color: #fff;
+        }
+
+        .header-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header a.back-link {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .header a.back-link:hover {
+            color: #fff;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        /* Stats Banner */
+        .stats-banner {
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-top: -2rem;
+            margin-left: 2rem;
+            margin-right: 2rem;
+            border-radius: 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #667eea;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        /* Section Styles */
+        .section {
+            margin-bottom: 4rem;
+        }
+
+        .section h2 {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section h2 .icon {
+            font-size: 2rem;
+        }
+
+        .section p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 1rem;
+        }
+
+        /* How It Works */
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .step {
+            background: #fff;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .step-number {
+            position: absolute;
+            top: -15px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .step h3 {
+            color: #333;
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .step p {
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
+        /* Benefits Grid */
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .benefit-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .benefit-icon {
+            font-size: 2rem;
+            flex-shrink: 0;
+        }
+
+        .benefit-content h3 {
+            color: #333;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .benefit-content p {
+            font-size: 0.95rem;
+            margin-bottom: 0;
+        }
+
+        /* Company vs Internal */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .comparison-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .comparison-card.highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .comparison-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .comparison-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .comparison-card li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            font-size: 1rem;
+        }
+
+        .comparison-card li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+        }
+
+        .comparison-card.highlight li::before {
+            color: #fff;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            color: #fff;
+        }
+
+        .cta-section h2 {
+            color: #fff;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .cta-section p {
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-white {
+            background: #fff;
+            color: #667eea;
+        }
+
+        .btn-white:hover {
+            background: #f0f0f0;
+            transform: scale(1.05);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #fff;
+            border: 2px solid #fff;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-banner {
+                margin: -2rem 1rem 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="index.html" class="back-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Back to Home
+            </a>
+            <h1>How PTO Buddy Works</h1>
+            <p>Building supportive workplace communities through shared time off</p>
+        </div>
+    </header>
+
+    <!-- Live Stats Banner -->
+    <div class="stats-banner">
+        <div class="stat-item">
+            <div class="stat-value" id="totalHours">--</div>
+            <div class="stat-label">Hours Donated</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="totalPeople">--</div>
+            <div class="stat-label">People Helped</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="totalCompanies">--</div>
+            <div class="stat-label">Companies Participating</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-value" id="totalDonors">--</div>
+            <div class="stat-label">Active Donors</div>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <!-- How It Works Section -->
+        <section class="section">
+            <h2><span class="icon">🔄</span> How PTO Sharing Works</h2>
+            <p>PTO Buddy makes it simple for employees to support each other during challenging times. Whether someone is facing a medical emergency, caring for a family member, or dealing with an unexpected crisis, colleagues can donate their unused paid time off hours.</p>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Sign Up</h3>
+                    <p>Create your account and indicate whether you'd like to donate PTO, request support, or both. Enter your available hours if you're a donor.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Browse or Request</h3>
+                    <p>View support requests from colleagues or submit your own request explaining your situation and how many hours you need.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Donate Hours</h3>
+                    <p>Choose how many hours to donate to a colleague in need. Add a supportive message to brighten their day.</p>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <h3>Track Impact</h3>
+                    <p>See your donation history and the collective impact of your organization's generosity.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Internal vs Cross-Company -->
+        <section class="section">
+            <h2><span class="icon">🏢</span> Internal & Cross-Company Sharing</h2>
+            <p>PTO Buddy supports both internal company sharing and cross-company donations, giving organizations flexibility in how they build their support networks.</p>
+
+            <div class="comparison">
+                <div class="comparison-card">
+                    <h3>🏠 Internal Sharing</h3>
+                    <ul>
+                        <li>Donate to colleagues within your organization</li>
+                        <li>Build stronger team bonds</li>
+                        <li>Company manages donation policies</li>
+                        <li>HR can track and report on participation</li>
+                        <li>Keep PTO within your organization</li>
+                    </ul>
+                </div>
+                <div class="comparison-card highlight">
+                    <h3>🌐 Cross-Company Sharing</h3>
+                    <ul>
+                        <li>Support workers at partner organizations</li>
+                        <li>Expand your impact across industries</li>
+                        <li>Help essential workers in any sector</li>
+                        <li>Build community beyond your workplace</li>
+                        <li>Opt-in for participating companies</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Benefits Section -->
+        <section class="section">
+            <h2><span class="icon">✨</span> Benefits for Everyone</h2>
+
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">👤</div>
+                    <div class="benefit-content">
+                        <h3>For Employees</h3>
+                        <p>Get the time you need during emergencies without the financial stress. Feel supported by your colleagues when life gets hard.</p>
+                    </div>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">🎁</div>
+                    <div class="benefit-content">
+                        <h3>For Donors</h3>
+                        <p>Turn unused PTO into meaningful support. Experience the satisfaction of directly helping a colleague through a difficult time.</p>
+                    </div>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">🏢</div>
+                    <div class="benefit-content">
+                        <h3>For Companies</h3>
+                        <p>Boost employee morale and retention. Foster a culture of care that attracts top talent and strengthens your team.</p>
+                    </div>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">📊</div>
+                    <div class="benefit-content">
+                        <h3>For HR Teams</h3>
+                        <p>Easy administration with full visibility. Track donations, manage policies, and generate reports with our admin dashboard.</p>
+                    </div>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">💜</div>
+                    <div class="benefit-content">
+                        <h3>For Culture</h3>
+                        <p>Create a workplace where people genuinely care for each other. Build trust and psychological safety across teams.</p>
+                    </div>
+                </div>
+                <div class="benefit-card">
+                    <div class="benefit-icon">🌍</div>
+                    <div class="benefit-content">
+                        <h3>For Community</h3>
+                        <p>Extend your impact beyond office walls. Support essential workers and strengthen bonds across organizations.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta-section">
+            <h2>Ready to Make a Difference?</h2>
+            <p>Join thousands of employees and companies who are building more supportive workplaces through PTO sharing.</p>
+            <div class="cta-buttons">
+                <a href="register.html" class="btn btn-white">Get Started</a>
+                <a href="index.html" class="btn btn-outline">Back to Home</a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        &copy; 2026 PTO Buddy. Making workplaces more human.
+    </footer>
+
+    <script>
+        const API_URL = window.location.origin;
+
+        // Load global stats
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/stats/global`);
+                if (response.ok) {
+                    const stats = await response.json();
+                    document.getElementById('totalHours').textContent = stats.totalHours.toLocaleString();
+                    document.getElementById('totalPeople').textContent = stats.totalPeopleHelped.toLocaleString();
+                    document.getElementById('totalCompanies').textContent = stats.totalCompanies.toLocaleString();
+                    document.getElementById('totalDonors').textContent = stats.totalDonors.toLocaleString();
+                } else {
+                    // Default values if API not available
+                    document.getElementById('totalHours').textContent = '0';
+                    document.getElementById('totalPeople').textContent = '0';
+                    document.getElementById('totalCompanies').textContent = '0';
+                    document.getElementById('totalDonors').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+                // Show zeros on error
+                document.getElementById('totalHours').textContent = '0';
+                document.getElementById('totalPeople').textContent = '0';
+                document.getElementById('totalCompanies').textContent = '0';
+                document.getElementById('totalDonors').textContent = '0';
+            }
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>

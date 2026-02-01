@@ -221,6 +221,82 @@
             color: #e74c3c;
         }
 
+        /* Registration Type Selection */
+        .registration-type-section {
+            margin-bottom: 10px;
+        }
+
+        .registration-type-options {
+            display: flex;
+            gap: 15px;
+        }
+
+        .type-option {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .type-option input[type="radio"] {
+            display: none;
+        }
+
+        .type-card {
+            padding: 20px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        .type-option input[type="radio"]:checked + .type-card {
+            border-color: #667eea;
+            background: #f8f9ff;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .type-card:hover {
+            border-color: #667eea;
+        }
+
+        .type-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .type-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .type-desc {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* Company Select Dropdown */
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .new-company-input {
+            margin-top: 10px;
+        }
+
         @media (max-width: 500px) {
             .form-row {
                 flex-direction: column;
@@ -229,6 +305,10 @@
 
             .register-container {
                 padding: 30px 20px;
+            }
+
+            .registration-type-options {
+                flex-direction: column;
             }
         }
     </style>
@@ -244,6 +324,31 @@
         </div>
 
         <form id="registerForm" onsubmit="handleSubmit(event)">
+            <!-- Registration Type Selection -->
+            <div class="registration-type-section">
+                <div class="section-title">I am registering as</div>
+                <div class="registration-type-options">
+                    <label class="type-option">
+                        <input type="radio" name="registrationType" value="employee" checked onchange="toggleRegistrationType()">
+                        <div class="type-card">
+                            <div class="type-icon">👤</div>
+                            <div class="type-label">Employee</div>
+                            <div class="type-desc">Join to donate or receive PTO</div>
+                        </div>
+                    </label>
+                    <label class="type-option">
+                        <input type="radio" name="registrationType" value="company" onchange="toggleRegistrationType()">
+                        <div class="type-card">
+                            <div class="type-icon">🏢</div>
+                            <div class="type-label">Company Admin</div>
+                            <div class="type-desc">Set up your company account</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
             <div class="section-title">Personal Information</div>
 
             <div class="form-row">
@@ -265,6 +370,24 @@
             <div class="form-group">
                 <label for="phone">Phone Number <span class="required">*</span></label>
                 <input type="tel" id="phone" name="phone" required placeholder="(555) 123-4567">
+            </div>
+
+            <!-- Company Field for Employees -->
+            <div class="form-group" id="companySelectGroup">
+                <label for="companySelect">Company <span class="required">*</span></label>
+                <select id="companySelect" name="companySelect" required onchange="toggleNewCompanyInput()">
+                    <option value="">Select your company...</option>
+                    <option value="new">+ Add a new company</option>
+                </select>
+                <div id="newCompanyInput" class="new-company-input" style="display: none;">
+                    <input type="text" id="newCompanyName" name="newCompanyName" placeholder="Enter company name">
+                </div>
+            </div>
+
+            <!-- Company Name Field for Company Admin -->
+            <div class="form-group" id="companyNameGroup" style="display: none;">
+                <label for="companyName">Company Name <span class="required">*</span></label>
+                <input type="text" id="companyName" name="companyName" placeholder="Enter your company name">
             </div>
 
             <div class="checkbox-group">
@@ -323,6 +446,69 @@
     <script>
         const API_URL = window.location.origin;
 
+        // Load companies on page load
+        document.addEventListener('DOMContentLoaded', loadCompanies);
+
+        async function loadCompanies() {
+            try {
+                const response = await fetch(`${API_URL}/api/companies`);
+                if (response.ok) {
+                    const companies = await response.json();
+                    const select = document.getElementById('companySelect');
+
+                    // Keep the default options
+                    companies.forEach(company => {
+                        const option = document.createElement('option');
+                        option.value = company.id;
+                        option.textContent = company.name;
+                        select.insertBefore(option, select.lastElementChild);
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load companies:', error);
+            }
+        }
+
+        function toggleRegistrationType() {
+            const isCompany = document.querySelector('input[name="registrationType"]:checked').value === 'company';
+            const companySelectGroup = document.getElementById('companySelectGroup');
+            const companyNameGroup = document.getElementById('companyNameGroup');
+            const checkboxGroup = document.querySelector('.checkbox-group');
+            const companySelect = document.getElementById('companySelect');
+            const companyNameInput = document.getElementById('companyName');
+
+            if (isCompany) {
+                // Company admin registration
+                companySelectGroup.style.display = 'none';
+                companyNameGroup.style.display = 'block';
+                checkboxGroup.style.display = 'none';
+                companySelect.required = false;
+                companyNameInput.required = true;
+            } else {
+                // Employee registration
+                companySelectGroup.style.display = 'block';
+                companyNameGroup.style.display = 'none';
+                checkboxGroup.style.display = 'block';
+                companySelect.required = true;
+                companyNameInput.required = false;
+            }
+        }
+
+        function toggleNewCompanyInput() {
+            const select = document.getElementById('companySelect');
+            const newCompanyInput = document.getElementById('newCompanyInput');
+            const newCompanyNameField = document.getElementById('newCompanyName');
+
+            if (select.value === 'new') {
+                newCompanyInput.style.display = 'block';
+                newCompanyNameField.required = true;
+            } else {
+                newCompanyInput.style.display = 'none';
+                newCompanyNameField.required = false;
+                newCompanyNameField.value = '';
+            }
+        }
+
         function togglePtoAmount() {
             const canDonate = document.getElementById('canDonate').checked;
             const ptoAmountGroup = document.getElementById('ptoAmountGroup');
@@ -341,16 +527,9 @@
         async function handleSubmit(event) {
             event.preventDefault();
 
-            const canDonate = document.getElementById('canDonate').checked;
-            const needSupport = document.getElementById('needSupport').checked;
+            const registrationType = document.querySelector('input[name="registrationType"]:checked').value;
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
-
-            // Validate at least one participation option is selected
-            if (!canDonate && !needSupport) {
-                alert('Please select at least one participation option (donate PTO or need support).');
-                return;
-            }
 
             // Validate passwords match
             if (password !== confirmPassword) {
@@ -364,7 +543,7 @@
                 return;
             }
 
-            // Collect form data
+            // Base form data
             const formData = {
                 firstName: document.getElementById('firstName').value,
                 lastName: document.getElementById('lastName').value,
@@ -372,10 +551,54 @@
                 phone: document.getElementById('phone').value,
                 username: document.getElementById('username').value,
                 password: password,
-                canDonate: canDonate,
-                needSupport: needSupport,
-                ptoHours: canDonate ? parseInt(document.getElementById('ptoHours').value) : 0
+                registrationType: registrationType
             };
+
+            if (registrationType === 'company') {
+                // Company admin registration
+                const companyName = document.getElementById('companyName').value.trim();
+                if (!companyName) {
+                    alert('Please enter your company name.');
+                    return;
+                }
+                formData.companyName = companyName;
+                formData.isCompanyAdmin = true;
+                formData.canDonate = false;
+                formData.needSupport = false;
+                formData.ptoHours = 0;
+            } else {
+                // Employee registration
+                const canDonate = document.getElementById('canDonate').checked;
+                const needSupport = document.getElementById('needSupport').checked;
+                const companySelect = document.getElementById('companySelect');
+
+                // Validate at least one participation option is selected
+                if (!canDonate && !needSupport) {
+                    alert('Please select at least one participation option (donate PTO or need support).');
+                    return;
+                }
+
+                // Validate company selection
+                if (!companySelect.value) {
+                    alert('Please select your company.');
+                    return;
+                }
+
+                if (companySelect.value === 'new') {
+                    const newCompanyName = document.getElementById('newCompanyName').value.trim();
+                    if (!newCompanyName) {
+                        alert('Please enter your company name.');
+                        return;
+                    }
+                    formData.companyName = newCompanyName;
+                } else {
+                    formData.companyId = parseInt(companySelect.value);
+                }
+
+                formData.canDonate = canDonate;
+                formData.needSupport = needSupport;
+                formData.ptoHours = canDonate ? parseInt(document.getElementById('ptoHours').value) : 0;
+            }
 
             try {
                 const response = await fetch(`${API_URL}/api/register`, {
@@ -393,8 +616,12 @@
                 // Store user data for auto-login
                 localStorage.setItem('ptobuddy_user', JSON.stringify(data.user));
 
-                // Redirect directly to dashboard
-                window.location.href = 'dashboard.html';
+                // Redirect based on registration type
+                if (registrationType === 'company') {
+                    window.location.href = 'company-admin.html';
+                } else {
+                    window.location.href = 'dashboard.html';
+                }
             } catch (error) {
                 alert('Registration failed: ' + error.message);
             }

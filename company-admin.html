@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Admin - PTO Buddy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #f5f7fb;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: #fff;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff;
+        }
+
+        .nav-avatar {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .main-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .company-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card h3 {
+            color: #888;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-card.highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .stat-card.highlight h3, .stat-card.highlight .stat-value {
+            color: #fff;
+        }
+
+        .stat-card .stat-subtitle {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 0.25rem;
+        }
+
+        .stat-card.highlight .stat-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* Section */
+        .section {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header h2 {
+            color: #333;
+            font-size: 1.25rem;
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+        }
+
+        th {
+            background: #f8f9ff;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #f8f9ff;
+        }
+
+        .employee-name {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .employee-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .employee-info h4 {
+            color: #333;
+            font-size: 0.95rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .employee-info p {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-admin {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-donor {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .badge-recipient {
+            background: #e0e7ff;
+            color: #667eea;
+        }
+
+        /* Cross-company section */
+        .cross-company-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+
+        .cross-stat-card {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .cross-stat-card h4 {
+            color: #555;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .cross-stat-card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .cross-stat-card .label {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #888;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid #e5e7eb;
+            padding: 0 1.5rem;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #888;
+            cursor: pointer;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .tab:hover {
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .cross-company-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-brand">
+            <span>🤝</span>
+            <span>PTO Buddy</span>
+        </a>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="company-admin.html" class="active">Company Admin</a>
+            <a href="request-support.html">Request Support</a>
+            <a href="my-donations.html">My Donations</a>
+        </div>
+        <div class="nav-user">
+            <div class="nav-avatar" id="userAvatar">--</div>
+            <span id="userName">Loading...</span>
+            <a href="#" onclick="logout()" style="color: rgba(255,255,255,0.7); margin-left: 15px; font-size: 0.9rem;">Logout</a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Company Administration <span class="company-badge" id="companyName">Loading...</span></h1>
+            <p>Manage employees and track your organization's PTO sharing activity</p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card highlight">
+                <h3>Total Employees</h3>
+                <div class="stat-value" id="statEmployees">--</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Donors</h3>
+                <div class="stat-value" id="statDonors">--</div>
+            </div>
+            <div class="stat-card">
+                <h3>Hours Donated</h3>
+                <div class="stat-value" id="statDonated">--</div>
+                <div class="stat-subtitle">by your employees</div>
+            </div>
+            <div class="stat-card">
+                <h3>Hours Received</h3>
+                <div class="stat-value" id="statReceived">--</div>
+                <div class="stat-subtitle">by your employees</div>
+            </div>
+            <div class="stat-card">
+                <h3>Active Requests</h3>
+                <div class="stat-value" id="statRequests">--</div>
+            </div>
+        </div>
+
+        <!-- Cross-Company Stats -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Cross-Company Donations</h2>
+            </div>
+            <div class="cross-company-stats">
+                <div class="cross-stat-card">
+                    <h4>Given to Other Companies</h4>
+                    <div class="value" id="crossGiven">--</div>
+                    <div class="label">hours</div>
+                </div>
+                <div class="cross-stat-card">
+                    <h4>Received from Other Companies</h4>
+                    <div class="value" id="crossReceived">--</div>
+                    <div class="label">hours</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employees Section -->
+        <div class="section">
+            <div class="section-header">
+                <h2>Employees</h2>
+            </div>
+            <div class="tabs">
+                <button class="tab active" onclick="filterEmployees('all')">All Employees</button>
+                <button class="tab" onclick="filterEmployees('donors')">Donors</button>
+                <button class="tab" onclick="filterEmployees('recipients')">Recipients</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th>Role</th>
+                            <th>Available PTO</th>
+                            <th>Status</th>
+                            <th>Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeeTable">
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                <div class="empty-state-icon">⏳</div>
+                                <p>Loading employees...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = window.location.origin;
+        let currentUser = null;
+        let allEmployees = [];
+
+        function checkAuth() {
+            const userData = localStorage.getItem('ptobuddy_user');
+            if (!userData) {
+                window.location.href = 'login.html';
+                return null;
+            }
+            const user = JSON.parse(userData);
+            // Check if user is company admin
+            if (!user.is_company_admin) {
+                alert('Access denied. Company admin privileges required.');
+                window.location.href = 'dashboard.html';
+                return null;
+            }
+            return user;
+        }
+
+        function logout() {
+            localStorage.removeItem('ptobuddy_user');
+            window.location.href = 'login.html';
+        }
+
+        async function init() {
+            currentUser = checkAuth();
+            if (!currentUser) return;
+
+            // Update nav with user info
+            const initials = (currentUser.first_name[0] + currentUser.last_name[0]).toUpperCase();
+            document.getElementById('userAvatar').textContent = initials;
+            document.getElementById('userName').textContent = `${currentUser.first_name} ${currentUser.last_name}`;
+            document.getElementById('companyName').textContent = currentUser.company_name || 'Your Company';
+
+            // Load data
+            await Promise.all([loadCompanyStats(), loadEmployees()]);
+        }
+
+        async function loadCompanyStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/companies/${currentUser.company_id}/stats`);
+                const stats = await response.json();
+
+                document.getElementById('statEmployees').textContent = stats.totalEmployees;
+                document.getElementById('statDonors').textContent = stats.totalDonors;
+                document.getElementById('statDonated').textContent = stats.totalDonated;
+                document.getElementById('statReceived').textContent = stats.totalReceived;
+                document.getElementById('statRequests').textContent = stats.activeRequests;
+                document.getElementById('crossGiven').textContent = stats.crossCompanyGiven;
+                document.getElementById('crossReceived').textContent = stats.crossCompanyReceived;
+            } catch (error) {
+                console.error('Failed to load company stats:', error);
+            }
+        }
+
+        async function loadEmployees() {
+            try {
+                const response = await fetch(`${API_URL}/api/companies/${currentUser.company_id}/employees`);
+                allEmployees = await response.json();
+                renderEmployees(allEmployees);
+            } catch (error) {
+                console.error('Failed to load employees:', error);
+                document.getElementById('employeeTable').innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div class="empty-state-icon">😕</div>
+                            <p>Failed to load employees</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function renderEmployees(employees) {
+            const tbody = document.getElementById('employeeTable');
+
+            if (employees.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div class="empty-state-icon">👥</div>
+                            <p>No employees found</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = employees.map(emp => {
+                const initials = (emp.first_name[0] + emp.last_name[0]).toUpperCase();
+                const badges = [];
+                if (emp.is_company_admin) badges.push('<span class="badge badge-admin">Admin</span>');
+                if (emp.can_donate) badges.push('<span class="badge badge-donor">Donor</span>');
+                if (emp.need_support) badges.push('<span class="badge badge-recipient">Recipient</span>');
+
+                const joinDate = new Date(emp.created_at).toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'short', day: 'numeric'
+                });
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="employee-name">
+                                <div class="employee-avatar">${initials}</div>
+                                <div class="employee-info">
+                                    <h4>${emp.first_name} ${emp.last_name}</h4>
+                                    <p>${emp.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${badges.join(' ') || '<span style="color:#888">-</span>'}</td>
+                        <td>${emp.available_pto_hours} hrs</td>
+                        <td>${emp.can_donate || emp.need_support ? 'Active' : 'Inactive'}</td>
+                        <td>${joinDate}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterEmployees(filter) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            let filtered = allEmployees;
+            if (filter === 'donors') {
+                filtered = allEmployees.filter(e => e.can_donate);
+            } else if (filter === 'recipients') {
+                filtered = allEmployees.filter(e => e.need_support);
+            }
+
+            renderEmployees(filtered);
+        }
+
+        init();
+    </script>
+</body>
+</html>

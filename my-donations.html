@@ -333,6 +333,8 @@
             <a href="dashboard.html">Dashboard</a>
             <a href="request-support.html">Request Support</a>
             <a href="my-donations.html" class="active">My Donations</a>
+            <a href="profile.html">Profile</a>
+            <a href="company-admin.html" id="adminLink" style="display: none;">Company Admin</a>
         </div>
         <div class="nav-user">
             <div class="nav-avatar" id="userAvatar">--</div>
@@ -415,6 +417,11 @@
             const initials = (currentUser.first_name[0] + currentUser.last_name[0]).toUpperCase();
             document.getElementById('userAvatar').textContent = initials;
             document.getElementById('userName').textContent = `${currentUser.first_name} ${currentUser.last_name}`;
+
+            // Show admin link if user is company admin
+            if (currentUser.is_company_admin) {
+                document.getElementById('adminLink').style.display = 'inline';
+            }
 
             // Load data
             await Promise.all([loadStats(), loadDonations()]);

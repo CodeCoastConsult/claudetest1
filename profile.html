@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - PTO Buddy</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            min-height: 100vh;
+            background: #f5f7fa;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .nav-brand span {
+            font-size: 1.5rem;
+        }
+
+        .nav-brand h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: #fff;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-name {
+            font-weight: 500;
+        }
+
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-header h2 {
+            color: #333;
+            font-size: 1.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-header p {
+            color: #666;
+        }
+
+        /* Profile Card */
+        .profile-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        input:disabled,
+        select:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .checkbox-group {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            background: #f8f9ff;
+            border-radius: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+
+        .checkbox-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            cursor: pointer;
+            accent-color: #667eea;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .checkbox-label span {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .checkbox-label small {
+            display: block;
+            color: #666;
+            margin-top: 2px;
+        }
+
+        .pto-amount-group {
+            margin-top: 15px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+            display: none;
+        }
+
+        .pto-amount-group.visible {
+            display: block;
+        }
+
+        .pto-amount-group label {
+            color: #667eea;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .btn {
+            padding: 0.875rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .success-msg {
+            background: #d4edda;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .success-msg.visible {
+            display: block;
+        }
+
+        .error-msg {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .error-msg.visible {
+            display: block;
+        }
+
+        .company-admin-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .navbar {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .main-content {
+                padding: 1rem;
+            }
+
+            .profile-card {
+                padding: 1.5rem;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="nav-brand">
+            <span>🤝</span>
+            <h1>PTO Buddy</h1>
+        </a>
+        <div class="nav-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="request-support.html">Request Support</a>
+            <a href="my-donations.html">My Donations</a>
+            <a href="profile.html" class="active">Profile</a>
+            <a href="company-admin.html" id="adminLink" style="display: none;">Company Admin</a>
+        </div>
+        <div class="nav-user">
+            <span class="user-name" id="userName"></span>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="page-header">
+            <h2>My Profile</h2>
+            <p>Manage your account information and preferences</p>
+        </div>
+
+        <div class="profile-card">
+            <div class="success-msg" id="successMsg">Profile updated successfully!</div>
+            <div class="error-msg" id="errorMsg"></div>
+
+            <form id="profileForm" onsubmit="handleSubmit(event)">
+                <div class="section-title">Personal Information</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="firstName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="lastName" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" disabled>
+                </div>
+
+                <div class="section-title">Company Information</div>
+
+                <div class="form-group">
+                    <label for="companySelect">
+                        Company
+                        <span class="company-admin-badge" id="adminBadge" style="display: none;">Admin</span>
+                    </label>
+                    <select id="companySelect" name="companySelect" required>
+                        <option value="">Select your company...</option>
+                    </select>
+                </div>
+
+                <div class="section-title">Participation Preferences</div>
+
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="canDonate" name="canDonate" onchange="togglePtoAmount()">
+                        <div class="checkbox-label">
+                            <span>I can donate PTO</span>
+                            <small>I have extra time off I'd like to share with colleagues</small>
+                        </div>
+                    </label>
+
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="needSupport" name="needSupport">
+                        <div class="checkbox-label">
+                            <span>I need support</span>
+                            <small>I'm facing challenges and could use additional time off</small>
+                        </div>
+                    </label>
+
+                    <div class="pto-amount-group" id="ptoAmountGroup">
+                        <label for="ptoHours">Available PTO Hours to Donate</label>
+                        <input type="number" id="ptoHours" name="ptoHours" min="0" max="500">
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;
+        let currentUser = null;
+        let originalData = null;
+
+        // Check if logged in
+        const userData = localStorage.getItem('ptobuddy_user');
+        if (!userData) {
+            window.location.href = 'index.html';
+        } else {
+            currentUser = JSON.parse(userData);
+            document.getElementById('userName').textContent = `${currentUser.first_name} ${currentUser.last_name}`;
+
+            // Show admin link if user is company admin
+            if (currentUser.is_company_admin) {
+                document.getElementById('adminLink').style.display = 'inline';
+            }
+
+            loadProfile();
+            loadCompanies();
+        }
+
+        async function loadProfile() {
+            try {
+                const response = await fetch(`${API_URL}/api/users/${currentUser.id}`);
+                if (response.ok) {
+                    originalData = await response.json();
+                    populateForm(originalData);
+                }
+            } catch (error) {
+                console.error('Failed to load profile:', error);
+            }
+        }
+
+        async function loadCompanies() {
+            try {
+                const response = await fetch(`${API_URL}/api/companies`);
+                if (response.ok) {
+                    const companies = await response.json();
+                    const select = document.getElementById('companySelect');
+
+                    companies.forEach(company => {
+                        const option = document.createElement('option');
+                        option.value = company.id;
+                        option.textContent = company.name;
+                        select.appendChild(option);
+                    });
+
+                    // Set current company if exists
+                    if (originalData && originalData.company_id) {
+                        select.value = originalData.company_id;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load companies:', error);
+            }
+        }
+
+        function populateForm(data) {
+            document.getElementById('firstName').value = data.first_name || '';
+            document.getElementById('lastName').value = data.last_name || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('phone').value = data.phone || '';
+            document.getElementById('username').value = data.username || '';
+            document.getElementById('canDonate').checked = data.can_donate == 1;
+            document.getElementById('needSupport').checked = data.need_support == 1;
+            document.getElementById('ptoHours').value = data.available_pto_hours || 0;
+
+            // Show admin badge if company admin
+            if (data.is_company_admin) {
+                document.getElementById('adminBadge').style.display = 'inline-block';
+            }
+
+            togglePtoAmount();
+        }
+
+        function togglePtoAmount() {
+            const canDonate = document.getElementById('canDonate').checked;
+            const ptoAmountGroup = document.getElementById('ptoAmountGroup');
+
+            if (canDonate) {
+                ptoAmountGroup.classList.add('visible');
+            } else {
+                ptoAmountGroup.classList.remove('visible');
+            }
+        }
+
+        function resetForm() {
+            if (originalData) {
+                populateForm(originalData);
+            }
+            hideMessages();
+        }
+
+        function hideMessages() {
+            document.getElementById('successMsg').classList.remove('visible');
+            document.getElementById('errorMsg').classList.remove('visible');
+        }
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+            hideMessages();
+
+            const canDonate = document.getElementById('canDonate').checked;
+            const needSupport = document.getElementById('needSupport').checked;
+
+            if (!canDonate && !needSupport) {
+                document.getElementById('errorMsg').textContent = 'Please select at least one participation option.';
+                document.getElementById('errorMsg').classList.add('visible');
+                return;
+            }
+
+            const formData = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                company_id: parseInt(document.getElementById('companySelect').value) || null,
+                can_donate: canDonate,
+                need_support: needSupport,
+                available_pto_hours: canDonate ? parseInt(document.getElementById('ptoHours').value) || 0 : 0
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/api/users/${currentUser.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Update failed');
+                }
+
+                // Update local storage with new data
+                const updatedUser = { ...currentUser, ...data.user };
+                localStorage.setItem('ptobuddy_user', JSON.stringify(updatedUser));
+                currentUser = updatedUser;
+                originalData = data.user;
+
+                // Update displayed name
+                document.getElementById('userName').textContent = `${updatedUser.first_name} ${updatedUser.last_name}`;
+
+                document.getElementById('successMsg').classList.add('visible');
+
+                // Hide success message after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('successMsg').classList.remove('visible');
+                }, 3000);
+            } catch (error) {
+                document.getElementById('errorMsg').textContent = error.message;
+                document.getElementById('errorMsg').classList.add('visible');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('ptobuddy_user');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
