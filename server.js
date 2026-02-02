@@ -222,7 +222,7 @@ app.get('/api/companies/:id/stats', (req, res) => {
 app.put('/api/companies/:companyId/employees/:userId', (req, res) => {
   try {
     const { companyId, userId } = req.params;
-    const { company_id } = req.body;
+    const { company_id, first_name, last_name, email, phone, can_donate, need_support, available_pto_hours, is_company_admin } = req.body;
 
     // Verify user belongs to this company
     const user = db.prepare('SELECT company_id FROM users WHERE id = ?').get(userId);
@@ -230,14 +230,188 @@ app.put('/api/companies/:companyId/employees/:userId', (req, res) => {
       return res.status(403).json({ error: 'User does not belong to this company' });
     }
 
-    if (company_id !== undefined) {
-      db.prepare('UPDATE users SET company_id = ? WHERE id = ?').run(company_id, userId);
+    const updates = [];
+    const values = [];
+
+    if (company_id !== undefined) { updates.push('company_id = ?'); values.push(company_id); }
+    if (first_name !== undefined) { updates.push('first_name = ?'); values.push(first_name); }
+    if (last_name !== undefined) { updates.push('last_name = ?'); values.push(last_name); }
+    if (email !== undefined) { updates.push('email = ?'); values.push(email); }
+    if (phone !== undefined) { updates.push('phone = ?'); values.push(phone); }
+    if (can_donate !== undefined) { updates.push('can_donate = ?'); values.push(can_donate ? 1 : 0); }
+    if (need_support !== undefined) { updates.push('need_support = ?'); values.push(need_support ? 1 : 0); }
+    if (available_pto_hours !== undefined) { updates.push('available_pto_hours = ?'); values.push(available_pto_hours); }
+    if (is_company_admin !== undefined) { updates.push('is_company_admin = ?'); values.push(is_company_admin ? 1 : 0); }
+
+    if (updates.length > 0) {
+      values.push(userId);
+      db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
     }
 
-    res.json({ message: 'Employee updated' });
+    // Return updated employee
+    const updatedEmployee = db.prepare(`
+      SELECT id, first_name, last_name, email, phone, username, company_id,
+             is_company_admin, can_donate, need_support, available_pto_hours, created_at
+      FROM users WHERE id = ?
+    `).get(userId);
+
+    res.json({ message: 'Employee updated', employee: updatedEmployee });
   } catch (error) {
     console.error('Update employee error:', error);
     res.status(500).json({ error: 'Failed to update employee' });
+  }
+});
+
+// Remove employee from company (for admin)
+app.delete('/api/companies/:companyId/employees/:userId', (req, res) => {
+  try {
+    const { companyId, userId } = req.params;
+    const { removeFromCompany } = req.query;
+
+    // Verify user belongs to this company
+    const user = db.prepare('SELECT company_id, is_company_admin FROM users WHERE id = ?').get(userId);
+    if (!user || user.company_id != companyId) {
+      return res.status(403).json({ error: 'User does not belong to this company' });
+    }
+
+    // Prevent removing the last admin
+    if (user.is_company_admin) {
+      const adminCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE company_id = ? AND is_company_admin = 1').get(companyId);
+      if (adminCount.count <= 1) {
+        return res.status(400).json({ error: 'Cannot remove the only company admin' });
+      }
+    }
+
+    if (removeFromCompany === 'true') {
+      // Just remove from company (set company_id to null)
+      db.prepare('UPDATE users SET company_id = NULL, is_company_admin = 0 WHERE id = ?').run(userId);
+      res.json({ message: 'Employee removed from company' });
+    } else {
+      // Delete the user entirely
+      db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+      res.json({ message: 'Employee deleted' });
+    }
+  } catch (error) {
+    console.error('Remove employee error:', error);
+    res.status(500).json({ error: 'Failed to remove employee' });
+  }
+});
+
+// Add employee to company (for admin - invite existing user or create new)
+app.post('/api/companies/:companyId/employees', async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const { email, firstName, lastName, phone, username, password, canDonate, needSupport, ptoHours } = req.body;
+
+    // Check if company exists
+    const company = db.prepare('SELECT id FROM companies WHERE id = ?').get(companyId);
+    if (!company) {
+      return res.status(404).json({ error: 'Company not found' });
+    }
+
+    // Check if user with this email already exists
+    const existingUser = db.prepare('SELECT id, company_id FROM users WHERE email = ?').get(email);
+
+    if (existingUser) {
+      if (existingUser.company_id) {
+        return res.status(400).json({ error: 'User is already assigned to a company' });
+      }
+      // Add existing user to company
+      db.prepare('UPDATE users SET company_id = ? WHERE id = ?').run(companyId, existingUser.id);
+      res.json({ message: 'User added to company', userId: existingUser.id });
+    } else {
+      // Create new user
+      if (!firstName || !lastName || !phone || !username || !password) {
+        return res.status(400).json({ error: 'All fields required for new employee' });
+      }
+
+      // Check if username is taken
+      const existingUsername = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+      if (existingUsername) {
+        return res.status(400).json({ error: 'Username already exists' });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const result = db.prepare(`
+        INSERT INTO users (first_name, last_name, email, phone, username, password, company_id, can_donate, need_support, available_pto_hours)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(firstName, lastName, email, phone, username, hashedPassword, companyId, canDonate ? 1 : 0, needSupport ? 1 : 0, ptoHours || 0);
+
+      res.status(201).json({ message: 'Employee created', userId: result.lastInsertRowid });
+    }
+  } catch (error) {
+    console.error('Add employee error:', error);
+    res.status(500).json({ error: 'Failed to add employee' });
+  }
+});
+
+// ============== PASSWORD MANAGEMENT ==============
+
+// Change password (authenticated user)
+app.put('/api/users/:id/password', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new password required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+
+    // Get user
+    const user = db.prepare('SELECT password FROM users WHERE id = ?').get(id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Verify current password
+    const validPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    // Hash and update new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, id);
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+// Reset password (for forgot password - by username or email)
+app.post('/api/password-reset', async (req, res) => {
+  try {
+    const { identifier, newPassword } = req.body;
+
+    if (!identifier || !newPassword) {
+      return res.status(400).json({ error: 'Username/email and new password required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    // Find user by username or email
+    const user = db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(identifier, identifier);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Hash and update password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, user.id);
+
+    res.json({ message: 'Password reset successfully' });
+  } catch (error) {
+    console.error('Password reset error:', error);
+    res.status(500).json({ error: 'Failed to reset password' });
   }
 });
 
