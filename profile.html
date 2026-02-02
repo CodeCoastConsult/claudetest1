@@ -434,6 +434,35 @@
                 </div>
             </form>
         </div>
+
+        <!-- Password Change Section -->
+        <div class="profile-card" style="margin-top: 2rem;">
+            <div class="success-msg" id="passwordSuccessMsg">Password changed successfully!</div>
+            <div class="error-msg" id="passwordErrorMsg"></div>
+
+            <form id="passwordForm" onsubmit="handlePasswordChange(event)">
+                <div class="section-title">Change Password</div>
+
+                <div class="form-group">
+                    <label for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" name="currentPassword" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" name="newPassword" required minlength="8">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmNewPassword">Confirm New Password</label>
+                    <input type="password" id="confirmNewPassword" name="confirmNewPassword" required minlength="8">
+                </div>
+
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Change Password</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -596,6 +625,61 @@
         function logout() {
             localStorage.removeItem('ptobuddy_user');
             window.location.href = 'index.html';
+        }
+
+        async function handlePasswordChange(event) {
+            event.preventDefault();
+
+            // Hide previous messages
+            document.getElementById('passwordSuccessMsg').classList.remove('visible');
+            document.getElementById('passwordErrorMsg').classList.remove('visible');
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+
+            // Validate passwords match
+            if (newPassword !== confirmNewPassword) {
+                document.getElementById('passwordErrorMsg').textContent = 'New passwords do not match.';
+                document.getElementById('passwordErrorMsg').classList.add('visible');
+                return;
+            }
+
+            // Validate password length
+            if (newPassword.length < 8) {
+                document.getElementById('passwordErrorMsg').textContent = 'New password must be at least 8 characters.';
+                document.getElementById('passwordErrorMsg').classList.add('visible');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/users/${currentUser.id}/password`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ currentPassword, newPassword })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Password change failed');
+                }
+
+                // Clear the form
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmNewPassword').value = '';
+
+                document.getElementById('passwordSuccessMsg').classList.add('visible');
+
+                // Hide success message after 3 seconds
+                setTimeout(() => {
+                    document.getElementById('passwordSuccessMsg').classList.remove('visible');
+                }, 3000);
+            } catch (error) {
+                document.getElementById('passwordErrorMsg').textContent = error.message;
+                document.getElementById('passwordErrorMsg').classList.add('visible');
+            }
         }
     </script>
 </body>

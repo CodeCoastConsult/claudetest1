@@ -381,6 +381,181 @@
             display: block;
         }
 
+        /* Action Buttons */
+        .action-btn {
+            padding: 0.4rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-right: 0.5rem;
+        }
+
+        .action-btn:last-child {
+            margin-right: 0;
+        }
+
+        .action-btn-edit {
+            background: #e0e7ff;
+            color: #667eea;
+        }
+
+        .action-btn-edit:hover {
+            background: #c7d2fe;
+        }
+
+        .action-btn-remove {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .action-btn-remove:hover {
+            background: #fecaca;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 1.25rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #888;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-item input {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        .confirm-text {
+            text-align: center;
+            padding: 1rem 0;
+            color: #555;
+        }
+
+        .confirm-text strong {
+            color: #333;
+        }
+
         @media (max-width: 768px) {
             .navbar {
                 flex-direction: column;
@@ -477,6 +652,7 @@
         <div class="section">
             <div class="section-header">
                 <h2>Employees</h2>
+                <button class="btn btn-primary" onclick="openAddEmployeeModal()">+ Add Employee</button>
             </div>
             <div class="tabs">
                 <button class="tab active" onclick="filterEmployees('all')">All Employees</button>
@@ -492,11 +668,12 @@
                             <th>Available PTO</th>
                             <th>Status</th>
                             <th>Joined</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="employeeTable">
                         <tr>
-                            <td colspan="5" class="empty-state">
+                            <td colspan="6" class="empty-state">
                                 <div class="empty-state-icon">⏳</div>
                                 <p>Loading employees...</p>
                             </td>
@@ -506,6 +683,145 @@
             </div>
         </div>
     </main>
+
+    <!-- Add Employee Modal -->
+    <div class="modal-overlay" id="addEmployeeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add Employee</h2>
+                <button class="modal-close" onclick="closeModal('addEmployeeModal')">&times;</button>
+            </div>
+            <form onsubmit="submitAddEmployee(event)">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name *</label>
+                            <input type="text" id="addFirstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name *</label>
+                            <input type="text" id="addLastName" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" id="addEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone *</label>
+                        <input type="tel" id="addPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Username *</label>
+                        <input type="text" id="addUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password *</label>
+                        <input type="password" id="addPassword" required minlength="8">
+                    </div>
+                    <div class="form-group">
+                        <label>Participation</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="addCanDonate">
+                                <span>Can Donate PTO</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="addNeedSupport">
+                                <span>Needs Support</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Available PTO Hours</label>
+                        <input type="number" id="addPtoHours" min="0" value="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addEmployeeModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Employee Modal -->
+    <div class="modal-overlay" id="editEmployeeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Edit Employee</h2>
+                <button class="modal-close" onclick="closeModal('editEmployeeModal')">&times;</button>
+            </div>
+            <form onsubmit="submitEditEmployee(event)">
+                <input type="hidden" id="editEmployeeId">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name *</label>
+                            <input type="text" id="editFirstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name *</label>
+                            <input type="text" id="editLastName" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email *</label>
+                        <input type="email" id="editEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone *</label>
+                        <input type="tel" id="editPhone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Participation</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="editCanDonate">
+                                <span>Can Donate PTO</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="editNeedSupport">
+                                <span>Needs Support</span>
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" id="editIsAdmin">
+                                <span>Company Admin</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Available PTO Hours</label>
+                        <input type="number" id="editPtoHours" min="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editEmployeeModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Remove Employee Modal -->
+    <div class="modal-overlay" id="removeEmployeeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Remove Employee</h2>
+                <button class="modal-close" onclick="closeModal('removeEmployeeModal')">&times;</button>
+            </div>
+            <input type="hidden" id="removeEmployeeId">
+            <div class="modal-body">
+                <p class="confirm-text">
+                    Are you sure you want to remove <strong id="removeEmployeeName"></strong> from your company?
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('removeEmployeeModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmRemoveEmployee()">Remove Employee</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         const API_URL = window.location.origin;
@@ -588,7 +904,7 @@
             if (employees.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="empty-state">
+                        <td colspan="6" class="empty-state">
                             <div class="empty-state-icon">👥</div>
                             <p>No employees found</p>
                         </td>
@@ -608,13 +924,15 @@
                     year: 'numeric', month: 'short', day: 'numeric'
                 });
 
+                const isSelf = emp.id === currentUser.id;
+
                 return `
                     <tr>
                         <td>
                             <div class="employee-name">
                                 <div class="employee-avatar">${initials}</div>
                                 <div class="employee-info">
-                                    <h4>${emp.first_name} ${emp.last_name}</h4>
+                                    <h4>${emp.first_name} ${emp.last_name}${isSelf ? ' (You)' : ''}</h4>
                                     <p>${emp.email}</p>
                                 </div>
                             </div>
@@ -623,6 +941,10 @@
                         <td>${emp.available_pto_hours} hrs</td>
                         <td>${emp.can_donate || emp.need_support ? 'Active' : 'Inactive'}</td>
                         <td>${joinDate}</td>
+                        <td>
+                            <button class="action-btn action-btn-edit" onclick='openEditEmployeeModal(${JSON.stringify(emp)})'>Edit</button>
+                            ${!isSelf ? `<button class="action-btn action-btn-remove" onclick="openRemoveEmployeeModal(${emp.id}, '${emp.first_name} ${emp.last_name}')">Remove</button>` : ''}
+                        </td>
                     </tr>
                 `;
             }).join('');
@@ -641,6 +963,163 @@
 
             renderEmployees(filtered);
         }
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function openAddEmployeeModal() {
+            // Clear form
+            document.getElementById('addFirstName').value = '';
+            document.getElementById('addLastName').value = '';
+            document.getElementById('addEmail').value = '';
+            document.getElementById('addPhone').value = '';
+            document.getElementById('addUsername').value = '';
+            document.getElementById('addPassword').value = '';
+            document.getElementById('addCanDonate').checked = false;
+            document.getElementById('addNeedSupport').checked = false;
+            document.getElementById('addPtoHours').value = 0;
+            openModal('addEmployeeModal');
+        }
+
+        function openEditEmployeeModal(employee) {
+            document.getElementById('editEmployeeId').value = employee.id;
+            document.getElementById('editFirstName').value = employee.first_name;
+            document.getElementById('editLastName').value = employee.last_name;
+            document.getElementById('editEmail').value = employee.email;
+            document.getElementById('editPhone').value = employee.phone;
+            document.getElementById('editCanDonate').checked = employee.can_donate == 1;
+            document.getElementById('editNeedSupport').checked = employee.need_support == 1;
+            document.getElementById('editIsAdmin').checked = employee.is_company_admin == 1;
+            document.getElementById('editPtoHours').value = employee.available_pto_hours || 0;
+            openModal('editEmployeeModal');
+        }
+
+        function openRemoveEmployeeModal(employeeId, employeeName) {
+            document.getElementById('removeEmployeeId').value = employeeId;
+            document.getElementById('removeEmployeeName').textContent = employeeName;
+            openModal('removeEmployeeModal');
+        }
+
+        async function submitAddEmployee(event) {
+            event.preventDefault();
+
+            const employeeData = {
+                firstName: document.getElementById('addFirstName').value,
+                lastName: document.getElementById('addLastName').value,
+                email: document.getElementById('addEmail').value,
+                phone: document.getElementById('addPhone').value,
+                username: document.getElementById('addUsername').value,
+                password: document.getElementById('addPassword').value,
+                canDonate: document.getElementById('addCanDonate').checked,
+                needSupport: document.getElementById('addNeedSupport').checked,
+                ptoHours: parseInt(document.getElementById('addPtoHours').value) || 0
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/api/companies/${currentUser.company_id}/employees`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(employeeData)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to add employee');
+                }
+
+                closeModal('addEmployeeModal');
+                await loadEmployees();
+                await loadCompanyStats();
+                alert('Employee added successfully!');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function submitEditEmployee(event) {
+            event.preventDefault();
+
+            const employeeId = document.getElementById('editEmployeeId').value;
+            const employeeData = {
+                first_name: document.getElementById('editFirstName').value,
+                last_name: document.getElementById('editLastName').value,
+                email: document.getElementById('editEmail').value,
+                phone: document.getElementById('editPhone').value,
+                can_donate: document.getElementById('editCanDonate').checked,
+                need_support: document.getElementById('editNeedSupport').checked,
+                is_company_admin: document.getElementById('editIsAdmin').checked,
+                available_pto_hours: parseInt(document.getElementById('editPtoHours').value) || 0
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/api/companies/${currentUser.company_id}/employees/${employeeId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(employeeData)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to update employee');
+                }
+
+                closeModal('editEmployeeModal');
+                await loadEmployees();
+                await loadCompanyStats();
+
+                // Update localStorage if editing self
+                if (employeeId == currentUser.id) {
+                    const updatedUser = { ...currentUser, ...data.employee };
+                    localStorage.setItem('ptobuddy_user', JSON.stringify(updatedUser));
+                    currentUser = updatedUser;
+                    document.getElementById('userName').textContent = `${updatedUser.first_name} ${updatedUser.last_name}`;
+                }
+
+                alert('Employee updated successfully!');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        async function confirmRemoveEmployee() {
+            const employeeId = document.getElementById('removeEmployeeId').value;
+
+            try {
+                const response = await fetch(`${API_URL}/api/companies/${currentUser.company_id}/employees/${employeeId}?removeFromCompany=true`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to remove employee');
+                }
+
+                closeModal('removeEmployeeModal');
+                await loadEmployees();
+                await loadCompanyStats();
+                alert('Employee removed from company successfully!');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Close modal when clicking outside
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.classList.remove('active');
+                }
+            });
+        });
 
         init();
     </script>

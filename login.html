@@ -138,6 +138,135 @@
         .error-message.visible {
             display: block;
         }
+
+        .forgot-password {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .forgot-password a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 1.25rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #888;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .success-message {
+            background: #d1fae5;
+            color: #059669;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .success-message.visible {
+            display: block;
+        }
+
+        .modal .form-group {
+            margin-bottom: 15px;
+        }
+
+        .modal .form-group:last-child {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body>
@@ -163,12 +292,51 @@
                 <input type="password" id="password" name="password" required placeholder="Enter your password">
             </div>
 
+            <div class="forgot-password">
+                <a href="#" onclick="openForgotPasswordModal(); return false;">Forgot password?</a>
+            </div>
+
             <button type="submit" class="btn-login" id="loginBtn">Sign In</button>
 
             <div class="register-link">
                 Don't have an account? <a href="register.html">Sign up</a>
             </div>
         </form>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgotPasswordModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Reset Password</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form onsubmit="handlePasswordReset(event)">
+                <div class="modal-body">
+                    <div class="success-message" id="resetSuccessMsg">Password reset successfully! You can now sign in.</div>
+                    <div class="error-message" id="resetErrorMsg" style="display: none;"></div>
+
+                    <div class="form-group">
+                        <label for="resetIdentifier">Username or Email</label>
+                        <input type="text" id="resetIdentifier" required placeholder="Enter your username or email">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="resetNewPassword">New Password</label>
+                        <input type="password" id="resetNewPassword" required minlength="8" placeholder="Enter new password (min 8 characters)">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="resetConfirmPassword">Confirm New Password</label>
+                        <input type="password" id="resetConfirmPassword" required minlength="8" placeholder="Confirm new password">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Reset Password</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -217,6 +385,85 @@
         if (localStorage.getItem('ptobuddy_user')) {
             window.location.href = 'dashboard.html';
         }
+
+        // Modal functions
+        function openForgotPasswordModal() {
+            // Clear form
+            document.getElementById('resetIdentifier').value = '';
+            document.getElementById('resetNewPassword').value = '';
+            document.getElementById('resetConfirmPassword').value = '';
+            document.getElementById('resetSuccessMsg').classList.remove('visible');
+            document.getElementById('resetErrorMsg').classList.remove('visible');
+            document.getElementById('forgotPasswordModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('forgotPasswordModal').classList.remove('active');
+        }
+
+        async function handlePasswordReset(event) {
+            event.preventDefault();
+
+            const successMsg = document.getElementById('resetSuccessMsg');
+            const errorMsg = document.getElementById('resetErrorMsg');
+            successMsg.classList.remove('visible');
+            errorMsg.classList.remove('visible');
+            errorMsg.style.display = 'none';
+
+            const identifier = document.getElementById('resetIdentifier').value;
+            const newPassword = document.getElementById('resetNewPassword').value;
+            const confirmPassword = document.getElementById('resetConfirmPassword').value;
+
+            // Validate passwords match
+            if (newPassword !== confirmPassword) {
+                errorMsg.textContent = 'Passwords do not match.';
+                errorMsg.style.display = 'block';
+                errorMsg.classList.add('visible');
+                return;
+            }
+
+            // Validate password length
+            if (newPassword.length < 8) {
+                errorMsg.textContent = 'Password must be at least 8 characters.';
+                errorMsg.style.display = 'block';
+                errorMsg.classList.add('visible');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/password-reset`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier, newPassword })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Password reset failed');
+                }
+
+                successMsg.classList.add('visible');
+
+                // Close modal after 2 seconds and prefill username
+                setTimeout(() => {
+                    closeModal();
+                    document.getElementById('username').value = identifier;
+                    document.getElementById('password').focus();
+                }, 2000);
+            } catch (error) {
+                errorMsg.textContent = error.message;
+                errorMsg.style.display = 'block';
+                errorMsg.classList.add('visible');
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('forgotPasswordModal').addEventListener('click', (e) => {
+            if (e.target.id === 'forgotPasswordModal') {
+                closeModal();
+            }
+        });
     </script>
 </body>
 </html>
