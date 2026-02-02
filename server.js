@@ -535,12 +535,13 @@ app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
+    // Allow login with either username OR email
     const user = db.prepare(`
       SELECT u.*, c.name as company_name
       FROM users u
       LEFT JOIN companies c ON u.company_id = c.id
-      WHERE u.username = ?
-    `).get(username);
+      WHERE u.username = ? OR u.email = ?
+    `).get(username, username);
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -853,6 +854,53 @@ app.get('/api/users/:userId/stats', (req, res) => {
 // Serve index.html for root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// ============== SEED DATA (for testing) ==============
+
+app.post('/api/seed', async (req, res) => {
+  try {
+    // Create a test company
+    let company = db.prepare('SELECT id FROM companies WHERE name = ?').get('Test Company');
+    if (!company) {
+      const companyResult = db.prepare('INSERT INTO companies (name, domain, allow_cross_company) VALUES (?, ?, ?)').run('Test Company', 'testcompany.com', 1);
+      company = { id: companyResult.lastInsertRowid };
+    }
+
+    // Create test users
+    const testUsers = [
+      { firstName: 'Admin', lastName: 'User', email: 'admin@testcompany.com', phone: '555-0001', username: 'admin', password: 'password123', isAdmin: true, canDonate: true, needSupport: false, ptoHours: 80 },
+      { firstName: 'John', lastName: 'Donor', email: 'john@testcompany.com', phone: '555-0002', username: 'john', password: 'password123', isAdmin: false, canDonate: true, needSupport: false, ptoHours: 40 },
+      { firstName: 'Jane', lastName: 'Recipient', email: 'jane@testcompany.com', phone: '555-0003', username: 'jane', password: 'password123', isAdmin: false, canDonate: false, needSupport: true, ptoHours: 0 },
+      { firstName: 'Test', lastName: 'User', email: 'test@test.com', phone: '555-0004', username: 'testuser', password: 'password123', isAdmin: false, canDonate: true, needSupport: true, ptoHours: 20 }
+    ];
+
+    const createdUsers = [];
+
+    for (const user of testUsers) {
+      // Check if user already exists
+      const existing = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(user.email, user.username);
+      if (!existing) {
+        const hashedPassword = await bcrypt.hash(user.password, 10);
+        const result = db.prepare(`
+          INSERT INTO users (first_name, last_name, email, phone, username, password, company_id, is_company_admin, can_donate, need_support, available_pto_hours)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(user.firstName, user.lastName, user.email, user.phone, user.username, hashedPassword, company.id, user.isAdmin ? 1 : 0, user.canDonate ? 1 : 0, user.needSupport ? 1 : 0, user.ptoHours);
+        createdUsers.push({ username: user.username, email: user.email, password: user.password });
+      } else {
+        createdUsers.push({ username: user.username, email: user.email, password: user.password, note: 'already exists' });
+      }
+    }
+
+    res.json({
+      message: 'Seed data created successfully',
+      company: 'Test Company',
+      users: createdUsers
+    });
+  } catch (error) {
+    console.error('Seed data error:', error);
+    res.status(500).json({ error: 'Failed to seed data' });
+  }
 });
 
 // Start server
