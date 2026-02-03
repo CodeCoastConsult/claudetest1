@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
-const Database = require('better-sqlite3');
+const { Pool } = require('pg');
 const path = require('path');
 
 const app = express();
@@ -12,87 +12,90 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '/')));
 
-// Initialize SQLite database
-const db = new Database('pto_buddy.db');
+// Initialize PostgreSQL connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
-// Create tables
-db.exec(`
-  CREATE TABLE IF NOT EXISTS companies (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL,
-    domain TEXT,
-    allow_cross_company BOOLEAN DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+// Initialize database tables
+async function initializeDatabase() {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS companies (
+        id SERIAL PRIMARY KEY,
+        name TEXT UNIQUE NOT NULL,
+        domain TEXT,
+        allow_cross_company BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
 
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    first_name TEXT NOT NULL,
-    last_name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    phone TEXT NOT NULL,
-    username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    company_id INTEGER,
-    is_company_admin BOOLEAN DEFAULT 0,
-    can_donate BOOLEAN DEFAULT 0,
-    need_support BOOLEAN DEFAULT 0,
-    available_pto_hours INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (company_id) REFERENCES companies(id)
-  );
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        first_name TEXT NOT NULL,
+        last_name TEXT NOT NULL,
+        email TEXT UNIQUE NOT NULL,
+        phone TEXT NOT NULL,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        company_id INTEGER REFERENCES companies(id),
+        is_company_admin BOOLEAN DEFAULT FALSE,
+        can_donate BOOLEAN DEFAULT FALSE,
+        need_support BOOLEAN DEFAULT FALSE,
+        available_pto_hours INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
 
-  CREATE TABLE IF NOT EXISTS support_requests (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL,
-    hours_needed INTEGER NOT NULL,
-    hours_received INTEGER DEFAULT 0,
-    urgency TEXT NOT NULL,
-    category TEXT NOT NULL,
-    reason TEXT NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE,
-    status TEXT DEFAULT 'active',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-  );
+      CREATE TABLE IF NOT EXISTS support_requests (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id),
+        hours_needed INTEGER NOT NULL,
+        hours_received INTEGER DEFAULT 0,
+        urgency TEXT NOT NULL,
+        category TEXT NOT NULL,
+        reason TEXT NOT NULL,
+        start_date DATE NOT NULL,
+        end_date DATE,
+        status TEXT DEFAULT 'active',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
 
-  CREATE TABLE IF NOT EXISTS donations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    donor_id INTEGER NOT NULL,
-    request_id INTEGER NOT NULL,
-    hours INTEGER NOT NULL,
-    message TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (donor_id) REFERENCES users(id),
-    FOREIGN KEY (request_id) REFERENCES support_requests(id)
-  );
-`);
+      CREATE TABLE IF NOT EXISTS donations (
+        id SERIAL PRIMARY KEY,
+        donor_id INTEGER NOT NULL REFERENCES users(id),
+        request_id INTEGER NOT NULL REFERENCES support_requests(id),
+        hours INTEGER NOT NULL,
+        message TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('Database tables initialized');
+  } catch (error) {
+    console.error('Database initialization error:', error);
+  } finally {
+    client.release();
+  }
+}
 
-// Add columns to existing tables if they don't exist (for migrations)
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN company_id INTEGER REFERENCES companies(id)`);
-} catch (e) { /* column already exists */ }
-
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN is_company_admin BOOLEAN DEFAULT 0`);
-} catch (e) { /* column already exists */ }
+// Initialize database on startup
+initializeDatabase();
 
 // ============== COMPANY ROUTES ==============
 
 // Get all companies (for dropdown)
-app.get('/api/companies', (req, res) => {
+app.get('/api/companies', async (req, res) => {
   try {
-    const companies = db.prepare('SELECT id, name FROM companies ORDER BY name').all();
-    res.json(companies);
+    const result = await pool.query('SELECT id, name FROM companies ORDER BY name');
+    res.json(result.rows);
   } catch (error) {
     console.error('Get companies error:', error);
     res.status(500).json({ error: 'Failed to get companies' });
   }
 });
 
-// Create a new company (when registering as company admin)
-app.post('/api/companies', (req, res) => {
+// Create a new company
+app.post('/api/companies', async (req, res) => {
   try {
     const { name, domain, allowCrossCompany } = req.body;
 
@@ -100,18 +103,19 @@ app.post('/api/companies', (req, res) => {
       return res.status(400).json({ error: 'Company name is required' });
     }
 
-    // Check if company already exists
-    const existing = db.prepare('SELECT id FROM companies WHERE name = ?').get(name);
-    if (existing) {
+    const existing = await pool.query('SELECT id FROM companies WHERE name = $1', [name]);
+    if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'Company already exists' });
     }
 
-    const stmt = db.prepare('INSERT INTO companies (name, domain, allow_cross_company) VALUES (?, ?, ?)');
-    const result = stmt.run(name, domain || null, allowCrossCompany ? 1 : 0);
+    const result = await pool.query(
+      'INSERT INTO companies (name, domain, allow_cross_company) VALUES ($1, $2, $3) RETURNING id',
+      [name, domain || null, allowCrossCompany || false]
+    );
 
     res.status(201).json({
       message: 'Company created',
-      companyId: result.lastInsertRowid
+      companyId: result.rows[0].id
     });
   } catch (error) {
     console.error('Create company error:', error);
@@ -120,97 +124,93 @@ app.post('/api/companies', (req, res) => {
 });
 
 // Get company details
-app.get('/api/companies/:id', (req, res) => {
+app.get('/api/companies/:id', async (req, res) => {
   try {
-    const company = db.prepare('SELECT * FROM companies WHERE id = ?').get(req.params.id);
-    if (!company) {
+    const result = await pool.query('SELECT * FROM companies WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Company not found' });
     }
-    res.json(company);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Get company error:', error);
     res.status(500).json({ error: 'Failed to get company' });
   }
 });
 
-// Get company employees (for admin)
-app.get('/api/companies/:id/employees', (req, res) => {
+// Get company employees
+app.get('/api/companies/:id/employees', async (req, res) => {
   try {
-    const employees = db.prepare(`
-      SELECT
-        id, first_name, last_name, email, phone, username,
-        is_company_admin, can_donate, need_support, available_pto_hours, created_at
+    const result = await pool.query(`
+      SELECT id, first_name, last_name, email, phone, username,
+             is_company_admin, can_donate, need_support, available_pto_hours, created_at
       FROM users
-      WHERE company_id = ?
+      WHERE company_id = $1
       ORDER BY last_name, first_name
-    `).all(req.params.id);
+    `, [req.params.id]);
 
-    res.json(employees);
+    res.json(result.rows);
   } catch (error) {
     console.error('Get employees error:', error);
     res.status(500).json({ error: 'Failed to get employees' });
   }
 });
 
-// Get company stats (for admin)
-app.get('/api/companies/:id/stats', (req, res) => {
+// Get company stats
+app.get('/api/companies/:id/stats', async (req, res) => {
   try {
     const companyId = req.params.id;
 
-    const totalEmployees = db.prepare('SELECT COUNT(*) as count FROM users WHERE company_id = ?').get(companyId);
+    const totalEmployees = await pool.query('SELECT COUNT(*) as count FROM users WHERE company_id = $1', [companyId]);
+    const totalDonors = await pool.query('SELECT COUNT(*) as count FROM users WHERE company_id = $1 AND can_donate = TRUE', [companyId]);
 
-    const totalDonors = db.prepare('SELECT COUNT(*) as count FROM users WHERE company_id = ? AND can_donate = 1').get(companyId);
-
-    const totalDonated = db.prepare(`
+    const totalDonated = await pool.query(`
       SELECT COALESCE(SUM(d.hours), 0) as total
       FROM donations d
       JOIN users u ON d.donor_id = u.id
-      WHERE u.company_id = ?
-    `).get(companyId);
+      WHERE u.company_id = $1
+    `, [companyId]);
 
-    const totalReceived = db.prepare(`
+    const totalReceived = await pool.query(`
       SELECT COALESCE(SUM(d.hours), 0) as total
       FROM donations d
       JOIN support_requests sr ON d.request_id = sr.id
       JOIN users u ON sr.user_id = u.id
-      WHERE u.company_id = ?
-    `).get(companyId);
+      WHERE u.company_id = $1
+    `, [companyId]);
 
-    const activeRequests = db.prepare(`
+    const activeRequests = await pool.query(`
       SELECT COUNT(*) as count
       FROM support_requests sr
       JOIN users u ON sr.user_id = u.id
-      WHERE u.company_id = ? AND sr.status = 'active'
-    `).get(companyId);
+      WHERE u.company_id = $1 AND sr.status = 'active'
+    `, [companyId]);
 
-    // Cross-company donations given
-    const crossCompanyGiven = db.prepare(`
+    const crossCompanyGiven = await pool.query(`
       SELECT COALESCE(SUM(d.hours), 0) as total
       FROM donations d
       JOIN users donor ON d.donor_id = donor.id
       JOIN support_requests sr ON d.request_id = sr.id
       JOIN users recipient ON sr.user_id = recipient.id
-      WHERE donor.company_id = ? AND recipient.company_id != ?
-    `).get(companyId, companyId);
+      WHERE donor.company_id = $1 AND recipient.company_id != $1
+    `, [companyId]);
 
-    // Cross-company donations received
-    const crossCompanyReceived = db.prepare(`
+    const crossCompanyReceived = await pool.query(`
       SELECT COALESCE(SUM(d.hours), 0) as total
       FROM donations d
       JOIN users donor ON d.donor_id = donor.id
       JOIN support_requests sr ON d.request_id = sr.id
       JOIN users recipient ON sr.user_id = recipient.id
-      WHERE recipient.company_id = ? AND donor.company_id != ?
-    `).get(companyId, companyId);
+      WHERE recipient.company_id = $1 AND donor.company_id != $1
+    `, [companyId]);
 
     res.json({
-      totalEmployees: totalEmployees.count,
-      totalDonors: totalDonors.count,
-      totalDonated: totalDonated.total,
-      totalReceived: totalReceived.total,
-      activeRequests: activeRequests.count,
-      crossCompanyGiven: crossCompanyGiven.total,
-      crossCompanyReceived: crossCompanyReceived.total
+      totalEmployees: parseInt(totalEmployees.rows[0].count),
+      totalDonors: parseInt(totalDonors.rows[0].count),
+      totalDonated: parseInt(totalDonated.rows[0].total),
+      totalReceived: parseInt(totalReceived.rows[0].total),
+      activeRequests: parseInt(activeRequests.rows[0].count),
+      crossCompanyGiven: parseInt(crossCompanyGiven.rows[0].total),
+      crossCompanyReceived: parseInt(crossCompanyReceived.rows[0].total)
     });
   } catch (error) {
     console.error('Get company stats error:', error);
@@ -219,76 +219,71 @@ app.get('/api/companies/:id/stats', (req, res) => {
 });
 
 // Update employee (for admin)
-app.put('/api/companies/:companyId/employees/:userId', (req, res) => {
+app.put('/api/companies/:companyId/employees/:userId', async (req, res) => {
   try {
     const { companyId, userId } = req.params;
     const { company_id, first_name, last_name, email, phone, can_donate, need_support, available_pto_hours, is_company_admin } = req.body;
 
-    // Verify user belongs to this company
-    const user = db.prepare('SELECT company_id FROM users WHERE id = ?').get(userId);
-    if (!user || user.company_id != companyId) {
+    const userCheck = await pool.query('SELECT company_id FROM users WHERE id = $1', [userId]);
+    if (userCheck.rows.length === 0 || userCheck.rows[0].company_id != companyId) {
       return res.status(403).json({ error: 'User does not belong to this company' });
     }
 
     const updates = [];
     const values = [];
+    let paramCount = 1;
 
-    if (company_id !== undefined) { updates.push('company_id = ?'); values.push(company_id); }
-    if (first_name !== undefined) { updates.push('first_name = ?'); values.push(first_name); }
-    if (last_name !== undefined) { updates.push('last_name = ?'); values.push(last_name); }
-    if (email !== undefined) { updates.push('email = ?'); values.push(email); }
-    if (phone !== undefined) { updates.push('phone = ?'); values.push(phone); }
-    if (can_donate !== undefined) { updates.push('can_donate = ?'); values.push(can_donate ? 1 : 0); }
-    if (need_support !== undefined) { updates.push('need_support = ?'); values.push(need_support ? 1 : 0); }
-    if (available_pto_hours !== undefined) { updates.push('available_pto_hours = ?'); values.push(available_pto_hours); }
-    if (is_company_admin !== undefined) { updates.push('is_company_admin = ?'); values.push(is_company_admin ? 1 : 0); }
+    if (company_id !== undefined) { updates.push(`company_id = $${paramCount++}`); values.push(company_id); }
+    if (first_name !== undefined) { updates.push(`first_name = $${paramCount++}`); values.push(first_name); }
+    if (last_name !== undefined) { updates.push(`last_name = $${paramCount++}`); values.push(last_name); }
+    if (email !== undefined) { updates.push(`email = $${paramCount++}`); values.push(email); }
+    if (phone !== undefined) { updates.push(`phone = $${paramCount++}`); values.push(phone); }
+    if (can_donate !== undefined) { updates.push(`can_donate = $${paramCount++}`); values.push(can_donate); }
+    if (need_support !== undefined) { updates.push(`need_support = $${paramCount++}`); values.push(need_support); }
+    if (available_pto_hours !== undefined) { updates.push(`available_pto_hours = $${paramCount++}`); values.push(available_pto_hours); }
+    if (is_company_admin !== undefined) { updates.push(`is_company_admin = $${paramCount++}`); values.push(is_company_admin); }
 
     if (updates.length > 0) {
       values.push(userId);
-      db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+      await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}`, values);
     }
 
-    // Return updated employee
-    const updatedEmployee = db.prepare(`
+    const updatedEmployee = await pool.query(`
       SELECT id, first_name, last_name, email, phone, username, company_id,
              is_company_admin, can_donate, need_support, available_pto_hours, created_at
-      FROM users WHERE id = ?
-    `).get(userId);
+      FROM users WHERE id = $1
+    `, [userId]);
 
-    res.json({ message: 'Employee updated', employee: updatedEmployee });
+    res.json({ message: 'Employee updated', employee: updatedEmployee.rows[0] });
   } catch (error) {
     console.error('Update employee error:', error);
     res.status(500).json({ error: 'Failed to update employee' });
   }
 });
 
-// Remove employee from company (for admin)
-app.delete('/api/companies/:companyId/employees/:userId', (req, res) => {
+// Remove employee from company
+app.delete('/api/companies/:companyId/employees/:userId', async (req, res) => {
   try {
     const { companyId, userId } = req.params;
     const { removeFromCompany } = req.query;
 
-    // Verify user belongs to this company
-    const user = db.prepare('SELECT company_id, is_company_admin FROM users WHERE id = ?').get(userId);
-    if (!user || user.company_id != companyId) {
+    const userCheck = await pool.query('SELECT company_id, is_company_admin FROM users WHERE id = $1', [userId]);
+    if (userCheck.rows.length === 0 || userCheck.rows[0].company_id != companyId) {
       return res.status(403).json({ error: 'User does not belong to this company' });
     }
 
-    // Prevent removing the last admin
-    if (user.is_company_admin) {
-      const adminCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE company_id = ? AND is_company_admin = 1').get(companyId);
-      if (adminCount.count <= 1) {
+    if (userCheck.rows[0].is_company_admin) {
+      const adminCount = await pool.query('SELECT COUNT(*) as count FROM users WHERE company_id = $1 AND is_company_admin = TRUE', [companyId]);
+      if (parseInt(adminCount.rows[0].count) <= 1) {
         return res.status(400).json({ error: 'Cannot remove the only company admin' });
       }
     }
 
     if (removeFromCompany === 'true') {
-      // Just remove from company (set company_id to null)
-      db.prepare('UPDATE users SET company_id = NULL, is_company_admin = 0 WHERE id = ?').run(userId);
+      await pool.query('UPDATE users SET company_id = NULL, is_company_admin = FALSE WHERE id = $1', [userId]);
       res.json({ message: 'Employee removed from company' });
     } else {
-      // Delete the user entirely
-      db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+      await pool.query('DELETE FROM users WHERE id = $1', [userId]);
       res.json({ message: 'Employee deleted' });
     }
   } catch (error) {
@@ -297,48 +292,43 @@ app.delete('/api/companies/:companyId/employees/:userId', (req, res) => {
   }
 });
 
-// Add employee to company (for admin - invite existing user or create new)
+// Add employee to company
 app.post('/api/companies/:companyId/employees', async (req, res) => {
   try {
     const { companyId } = req.params;
     const { email, firstName, lastName, phone, username, password, canDonate, needSupport, ptoHours } = req.body;
 
-    // Check if company exists
-    const company = db.prepare('SELECT id FROM companies WHERE id = ?').get(companyId);
-    if (!company) {
+    const company = await pool.query('SELECT id FROM companies WHERE id = $1', [companyId]);
+    if (company.rows.length === 0) {
       return res.status(404).json({ error: 'Company not found' });
     }
 
-    // Check if user with this email already exists
-    const existingUser = db.prepare('SELECT id, company_id FROM users WHERE email = ?').get(email);
+    const existingUser = await pool.query('SELECT id, company_id FROM users WHERE email = $1', [email]);
 
-    if (existingUser) {
-      if (existingUser.company_id) {
+    if (existingUser.rows.length > 0) {
+      if (existingUser.rows[0].company_id) {
         return res.status(400).json({ error: 'User is already assigned to a company' });
       }
-      // Add existing user to company
-      db.prepare('UPDATE users SET company_id = ? WHERE id = ?').run(companyId, existingUser.id);
-      res.json({ message: 'User added to company', userId: existingUser.id });
+      await pool.query('UPDATE users SET company_id = $1 WHERE id = $2', [companyId, existingUser.rows[0].id]);
+      res.json({ message: 'User added to company', userId: existingUser.rows[0].id });
     } else {
-      // Create new user
       if (!firstName || !lastName || !phone || !username || !password) {
         return res.status(400).json({ error: 'All fields required for new employee' });
       }
 
-      // Check if username is taken
-      const existingUsername = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
-      if (existingUsername) {
+      const existingUsername = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+      if (existingUsername.rows.length > 0) {
         return res.status(400).json({ error: 'Username already exists' });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      const result = db.prepare(`
+      const result = await pool.query(`
         INSERT INTO users (first_name, last_name, email, phone, username, password, company_id, can_donate, need_support, available_pto_hours)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(firstName, lastName, email, phone, username, hashedPassword, companyId, canDonate ? 1 : 0, needSupport ? 1 : 0, ptoHours || 0);
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id
+      `, [firstName, lastName, email, phone, username, hashedPassword, companyId, canDonate || false, needSupport || false, ptoHours || 0]);
 
-      res.status(201).json({ message: 'Employee created', userId: result.lastInsertRowid });
+      res.status(201).json({ message: 'Employee created', userId: result.rows[0].id });
     }
   } catch (error) {
     console.error('Add employee error:', error);
@@ -348,7 +338,6 @@ app.post('/api/companies/:companyId/employees', async (req, res) => {
 
 // ============== PASSWORD MANAGEMENT ==============
 
-// Change password (authenticated user)
 app.put('/api/users/:id/password', async (req, res) => {
   try {
     const { id } = req.params;
@@ -362,21 +351,18 @@ app.put('/api/users/:id/password', async (req, res) => {
       return res.status(400).json({ error: 'New password must be at least 8 characters' });
     }
 
-    // Get user
-    const user = db.prepare('SELECT password FROM users WHERE id = ?').get(id);
-    if (!user) {
+    const user = await pool.query('SELECT password FROM users WHERE id = $1', [id]);
+    if (user.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Verify current password
-    const validPassword = await bcrypt.compare(currentPassword, user.password);
+    const validPassword = await bcrypt.compare(currentPassword, user.rows[0].password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
 
-    // Hash and update new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, id);
+    await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, id]);
 
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
@@ -385,7 +371,6 @@ app.put('/api/users/:id/password', async (req, res) => {
   }
 });
 
-// Reset password (for forgot password - by username or email)
 app.post('/api/password-reset', async (req, res) => {
   try {
     const { identifier, newPassword } = req.body;
@@ -398,15 +383,13 @@ app.post('/api/password-reset', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
     }
 
-    // Find user by username or email
-    const user = db.prepare('SELECT id FROM users WHERE username = ? OR email = ?').get(identifier, identifier);
-    if (!user) {
+    const user = await pool.query('SELECT id FROM users WHERE username = $1 OR email = $1', [identifier]);
+    if (user.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Hash and update password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hashedPassword, user.id);
+    await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, user.rows[0].id]);
 
     res.json({ message: 'Password reset successfully' });
   } catch (error) {
@@ -417,25 +400,22 @@ app.post('/api/password-reset', async (req, res) => {
 
 // ============== GLOBAL STATS ==============
 
-app.get('/api/stats/global', (req, res) => {
+app.get('/api/stats/global', async (req, res) => {
   try {
-    const totalHours = db.prepare('SELECT COALESCE(SUM(hours), 0) as total FROM donations').get();
-
-    const totalPeopleHelped = db.prepare(`
+    const totalHours = await pool.query('SELECT COALESCE(SUM(hours), 0) as total FROM donations');
+    const totalPeopleHelped = await pool.query(`
       SELECT COUNT(DISTINCT sr.user_id) as count
       FROM donations d
       JOIN support_requests sr ON d.request_id = sr.id
-    `).get();
-
-    const totalCompanies = db.prepare('SELECT COUNT(*) as count FROM companies').get();
-
-    const totalDonors = db.prepare('SELECT COUNT(DISTINCT donor_id) as count FROM donations').get();
+    `);
+    const totalCompanies = await pool.query('SELECT COUNT(*) as count FROM companies');
+    const totalDonors = await pool.query('SELECT COUNT(DISTINCT donor_id) as count FROM donations');
 
     res.json({
-      totalHours: totalHours.total,
-      totalPeopleHelped: totalPeopleHelped.count,
-      totalCompanies: totalCompanies.count,
-      totalDonors: totalDonors.count
+      totalHours: parseInt(totalHours.rows[0].total),
+      totalPeopleHelped: parseInt(totalPeopleHelped.rows[0].count),
+      totalCompanies: parseInt(totalCompanies.rows[0].count),
+      totalDonors: parseInt(totalDonors.rows[0].count)
     });
   } catch (error) {
     console.error('Get global stats error:', error);
@@ -445,7 +425,6 @@ app.get('/api/stats/global', (req, res) => {
 
 // ============== AUTH ROUTES ==============
 
-// Register a new user
 app.post('/api/register', async (req, res) => {
   try {
     const {
@@ -454,59 +433,60 @@ app.post('/api/register', async (req, res) => {
       companyId, companyName, isCompanyAdmin, registrationType
     } = req.body;
 
-    // Validate required fields
     if (!firstName || !lastName || !email || !phone || !username || !password) {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // Check if user already exists
-    const existingUser = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(email, username);
-    if (existingUser) {
+    const existingUser = await pool.query('SELECT id FROM users WHERE email = $1 OR username = $2', [email, username]);
+    if (existingUser.rows.length > 0) {
       return res.status(400).json({ error: 'User with this email or username already exists' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     let finalCompanyId = companyId;
 
-    // If registering as company admin, create the company first
     if (registrationType === 'company' && companyName) {
-      // Check if company exists
-      let company = db.prepare('SELECT id FROM companies WHERE name = ?').get(companyName);
-      if (company) {
+      const existingCompany = await pool.query('SELECT id FROM companies WHERE name = $1', [companyName]);
+      if (existingCompany.rows.length > 0) {
         return res.status(400).json({ error: 'Company already exists. Please join as an employee or contact your admin.' });
       }
 
-      // Create new company
-      const companyResult = db.prepare('INSERT INTO companies (name) VALUES (?)').run(companyName);
-      finalCompanyId = companyResult.lastInsertRowid;
+      const companyResult = await pool.query('INSERT INTO companies (name) VALUES ($1) RETURNING id', [companyName]);
+      finalCompanyId = companyResult.rows[0].id;
     }
 
-    // Insert user
-    const stmt = db.prepare(`
-      INSERT INTO users (first_name, last_name, email, phone, username, password, company_id, is_company_admin, can_donate, need_support, available_pto_hours)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    // If employee selected "new" company, create it
+    if (!finalCompanyId && companyName) {
+      const existingCompany = await pool.query('SELECT id FROM companies WHERE name = $1', [companyName]);
+      if (existingCompany.rows.length > 0) {
+        finalCompanyId = existingCompany.rows[0].id;
+      } else {
+        const companyResult = await pool.query('INSERT INTO companies (name) VALUES ($1) RETURNING id', [companyName]);
+        finalCompanyId = companyResult.rows[0].id;
+      }
+    }
 
-    const result = stmt.run(
+    const result = await pool.query(`
+      INSERT INTO users (first_name, last_name, email, phone, username, password, company_id, is_company_admin, can_donate, need_support, available_pto_hours)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id
+    `, [
       firstName, lastName, email, phone, username, hashedPassword,
       finalCompanyId || null,
-      (registrationType === 'company' || isCompanyAdmin) ? 1 : 0,
-      canDonate ? 1 : 0,
-      needSupport ? 1 : 0,
+      (registrationType === 'company' || isCompanyAdmin) || false,
+      canDonate || false,
+      needSupport || false,
       ptoHours || 0
-    );
+    ]);
 
-    // Get company name if exists
     let companyInfo = null;
     if (finalCompanyId) {
-      companyInfo = db.prepare('SELECT id, name FROM companies WHERE id = ?').get(finalCompanyId);
+      const companyResult = await pool.query('SELECT id, name FROM companies WHERE id = $1', [finalCompanyId]);
+      companyInfo = companyResult.rows[0];
     }
 
-    // Return user data for auto-login
     const newUser = {
-      id: result.lastInsertRowid,
+      id: result.rows[0].id,
       first_name: firstName,
       last_name: lastName,
       email: email,
@@ -514,9 +494,9 @@ app.post('/api/register', async (req, res) => {
       username: username,
       company_id: finalCompanyId || null,
       company_name: companyInfo ? companyInfo.name : null,
-      is_company_admin: (registrationType === 'company' || isCompanyAdmin) ? 1 : 0,
-      can_donate: canDonate ? 1 : 0,
-      need_support: needSupport ? 1 : 0,
+      is_company_admin: (registrationType === 'company' || isCompanyAdmin) || false,
+      can_donate: canDonate || false,
+      need_support: needSupport || false,
       available_pto_hours: ptoHours || 0
     };
 
@@ -530,29 +510,27 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Login
 app.post('/api/login', async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    // Allow login with either username OR email
-    const user = db.prepare(`
+    const result = await pool.query(`
       SELECT u.*, c.name as company_name
       FROM users u
       LEFT JOIN companies c ON u.company_id = c.id
-      WHERE u.username = ? OR u.email = ?
-    `).get(username, username);
+      WHERE u.username = $1 OR u.email = $1
+    `, [username]);
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    const user = result.rows[0];
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Return user info (excluding password)
     const { password: _, ...userWithoutPassword } = user;
     res.json({
       message: 'Login successful',
@@ -565,22 +543,22 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Get user profile
-app.get('/api/users/:id', (req, res) => {
+app.get('/api/users/:id', async (req, res) => {
   try {
-    const user = db.prepare(`
+    const result = await pool.query(`
       SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.username,
              u.company_id, u.is_company_admin, u.can_donate, u.need_support,
              u.available_pto_hours, u.created_at, c.name as company_name
       FROM users u
       LEFT JOIN companies c ON u.company_id = c.id
-      WHERE u.id = ?
-    `).get(req.params.id);
+      WHERE u.id = $1
+    `, [req.params.id]);
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    res.json(user);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Get user error:', error);
     res.status(500).json({ error: 'Failed to get user' });
@@ -588,41 +566,41 @@ app.get('/api/users/:id', (req, res) => {
 });
 
 // Update user profile
-app.put('/api/users/:id', (req, res) => {
+app.put('/api/users/:id', async (req, res) => {
   try {
     const userId = req.params.id;
     const { first_name, last_name, email, phone, company_id, can_donate, need_support, available_pto_hours } = req.body;
 
     const updates = [];
     const values = [];
+    let paramCount = 1;
 
-    if (first_name !== undefined) { updates.push('first_name = ?'); values.push(first_name); }
-    if (last_name !== undefined) { updates.push('last_name = ?'); values.push(last_name); }
-    if (email !== undefined) { updates.push('email = ?'); values.push(email); }
-    if (phone !== undefined) { updates.push('phone = ?'); values.push(phone); }
-    if (company_id !== undefined) { updates.push('company_id = ?'); values.push(company_id); }
-    if (can_donate !== undefined) { updates.push('can_donate = ?'); values.push(can_donate ? 1 : 0); }
-    if (need_support !== undefined) { updates.push('need_support = ?'); values.push(need_support ? 1 : 0); }
-    if (available_pto_hours !== undefined) { updates.push('available_pto_hours = ?'); values.push(available_pto_hours); }
+    if (first_name !== undefined) { updates.push(`first_name = $${paramCount++}`); values.push(first_name); }
+    if (last_name !== undefined) { updates.push(`last_name = $${paramCount++}`); values.push(last_name); }
+    if (email !== undefined) { updates.push(`email = $${paramCount++}`); values.push(email); }
+    if (phone !== undefined) { updates.push(`phone = $${paramCount++}`); values.push(phone); }
+    if (company_id !== undefined) { updates.push(`company_id = $${paramCount++}`); values.push(company_id); }
+    if (can_donate !== undefined) { updates.push(`can_donate = $${paramCount++}`); values.push(can_donate); }
+    if (need_support !== undefined) { updates.push(`need_support = $${paramCount++}`); values.push(need_support); }
+    if (available_pto_hours !== undefined) { updates.push(`available_pto_hours = $${paramCount++}`); values.push(available_pto_hours); }
 
     if (updates.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
 
     values.push(userId);
-    db.prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+    await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}`, values);
 
-    // Return updated user
-    const user = db.prepare(`
+    const result = await pool.query(`
       SELECT u.id, u.first_name, u.last_name, u.email, u.phone, u.username,
              u.company_id, u.is_company_admin, u.can_donate, u.need_support,
              u.available_pto_hours, u.created_at, c.name as company_name
       FROM users u
       LEFT JOIN companies c ON u.company_id = c.id
-      WHERE u.id = ?
-    `).get(userId);
+      WHERE u.id = $1
+    `, [userId]);
 
-    res.json({ message: 'Profile updated', user });
+    res.json({ message: 'Profile updated', user: result.rows[0] });
   } catch (error) {
     console.error('Update user error:', error);
     res.status(500).json({ error: 'Failed to update user' });
@@ -631,8 +609,7 @@ app.put('/api/users/:id', (req, res) => {
 
 // ============== SUPPORT REQUEST ROUTES ==============
 
-// Create a support request
-app.post('/api/requests', (req, res) => {
+app.post('/api/requests', async (req, res) => {
   try {
     const { userId, hoursNeeded, urgency, category, reason, startDate, endDate } = req.body;
 
@@ -640,16 +617,14 @@ app.post('/api/requests', (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    const stmt = db.prepare(`
+    const result = await pool.query(`
       INSERT INTO support_requests (user_id, hours_needed, urgency, category, reason, start_date, end_date)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const result = stmt.run(userId, hoursNeeded, urgency, category, reason, startDate, endDate || null);
+      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
+    `, [userId, hoursNeeded, urgency, category, reason, startDate, endDate || null]);
 
     res.status(201).json({
       message: 'Support request created',
-      requestId: result.lastInsertRowid
+      requestId: result.rows[0].id
     });
   } catch (error) {
     console.error('Create request error:', error);
@@ -657,10 +632,9 @@ app.post('/api/requests', (req, res) => {
   }
 });
 
-// Get all active support requests
-app.get('/api/requests', (req, res) => {
+app.get('/api/requests', async (req, res) => {
   try {
-    const requests = db.prepare(`
+    const result = await pool.query(`
       SELECT
         sr.*,
         u.first_name,
@@ -679,19 +653,18 @@ app.get('/api/requests', (req, res) => {
           ELSE 3
         END,
         sr.created_at DESC
-    `).all();
+    `);
 
-    res.json(requests);
+    res.json(result.rows);
   } catch (error) {
     console.error('Get requests error:', error);
     res.status(500).json({ error: 'Failed to get requests' });
   }
 });
 
-// Get a single request
-app.get('/api/requests/:id', (req, res) => {
+app.get('/api/requests/:id', async (req, res) => {
   try {
-    const request = db.prepare(`
+    const result = await pool.query(`
       SELECT
         sr.*,
         u.first_name,
@@ -699,33 +672,32 @@ app.get('/api/requests/:id', (req, res) => {
         (SELECT COALESCE(SUM(hours), 0) FROM donations WHERE request_id = sr.id) as hours_received
       FROM support_requests sr
       JOIN users u ON sr.user_id = u.id
-      WHERE sr.id = ?
-    `).get(req.params.id);
+      WHERE sr.id = $1
+    `, [req.params.id]);
 
-    if (!request) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Request not found' });
     }
 
-    res.json(request);
+    res.json(result.rows[0]);
   } catch (error) {
     console.error('Get request error:', error);
     res.status(500).json({ error: 'Failed to get request' });
   }
 });
 
-// Get requests by user
-app.get('/api/users/:userId/requests', (req, res) => {
+app.get('/api/users/:userId/requests', async (req, res) => {
   try {
-    const requests = db.prepare(`
+    const result = await pool.query(`
       SELECT
         sr.*,
         (SELECT COALESCE(SUM(hours), 0) FROM donations WHERE request_id = sr.id) as hours_received
       FROM support_requests sr
-      WHERE sr.user_id = ?
+      WHERE sr.user_id = $1
       ORDER BY sr.created_at DESC
-    `).all(req.params.userId);
+    `, [req.params.userId]);
 
-    res.json(requests);
+    res.json(result.rows);
   } catch (error) {
     console.error('Get user requests error:', error);
     res.status(500).json({ error: 'Failed to get requests' });
@@ -734,8 +706,8 @@ app.get('/api/users/:userId/requests', (req, res) => {
 
 // ============== DONATION ROUTES ==============
 
-// Make a donation
-app.post('/api/donations', (req, res) => {
+app.post('/api/donations', async (req, res) => {
+  const client = await pool.connect();
   try {
     const { donorId, requestId, hours, message } = req.body;
 
@@ -743,60 +715,47 @@ app.post('/api/donations', (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Check if donor has enough PTO
-    const donor = db.prepare('SELECT available_pto_hours FROM users WHERE id = ?').get(donorId);
-    if (!donor || donor.available_pto_hours < hours) {
+    await client.query('BEGIN');
+
+    const donor = await client.query('SELECT available_pto_hours FROM users WHERE id = $1', [donorId]);
+    if (donor.rows.length === 0 || donor.rows[0].available_pto_hours < hours) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ error: 'Insufficient PTO hours available' });
     }
 
-    // Check if request exists and is active
-    const request = db.prepare('SELECT * FROM support_requests WHERE id = ? AND status = ?').get(requestId, 'active');
-    if (!request) {
+    const request = await client.query('SELECT * FROM support_requests WHERE id = $1 AND status = $2', [requestId, 'active']);
+    if (request.rows.length === 0) {
+      await client.query('ROLLBACK');
       return res.status(404).json({ error: 'Support request not found or closed' });
     }
 
-    // Create donation
-    const insertDonation = db.prepare(`
+    await client.query(`
       INSERT INTO donations (donor_id, request_id, hours, message)
-      VALUES (?, ?, ?, ?)
-    `);
+      VALUES ($1, $2, $3, $4)
+    `, [donorId, requestId, hours, message || null]);
 
-    // Update donor's available PTO
-    const updateDonorPTO = db.prepare(`
-      UPDATE users SET available_pto_hours = available_pto_hours - ? WHERE id = ?
-    `);
+    await client.query('UPDATE users SET available_pto_hours = available_pto_hours - $1 WHERE id = $2', [hours, donorId]);
+    await client.query('UPDATE support_requests SET hours_received = hours_received + $1 WHERE id = $2', [hours, requestId]);
 
-    // Update request's received hours
-    const updateRequestHours = db.prepare(`
-      UPDATE support_requests SET hours_received = hours_received + ? WHERE id = ?
-    `);
+    const updatedRequest = await client.query('SELECT hours_needed, hours_received FROM support_requests WHERE id = $1', [requestId]);
+    if (updatedRequest.rows[0].hours_received >= updatedRequest.rows[0].hours_needed) {
+      await client.query('UPDATE support_requests SET status = $1 WHERE id = $2', ['fulfilled', requestId]);
+    }
 
-    // Run as transaction
-    const transaction = db.transaction(() => {
-      insertDonation.run(donorId, requestId, hours, message || null);
-      updateDonorPTO.run(hours, donorId);
-      updateRequestHours.run(hours, requestId);
-
-      // Check if request is fully funded
-      const updatedRequest = db.prepare('SELECT hours_needed, hours_received FROM support_requests WHERE id = ?').get(requestId);
-      if (updatedRequest.hours_received >= updatedRequest.hours_needed) {
-        db.prepare('UPDATE support_requests SET status = ? WHERE id = ?').run('fulfilled', requestId);
-      }
-    });
-
-    transaction();
-
+    await client.query('COMMIT');
     res.status(201).json({ message: 'Donation successful' });
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Donation error:', error);
     res.status(500).json({ error: 'Donation failed' });
+  } finally {
+    client.release();
   }
 });
 
-// Get donations by user (donor)
-app.get('/api/users/:userId/donations', (req, res) => {
+app.get('/api/users/:userId/donations', async (req, res) => {
   try {
-    const donations = db.prepare(`
+    const result = await pool.query(`
       SELECT
         d.*,
         sr.reason,
@@ -809,39 +768,34 @@ app.get('/api/users/:userId/donations', (req, res) => {
       JOIN support_requests sr ON d.request_id = sr.id
       JOIN users u ON sr.user_id = u.id
       LEFT JOIN companies c ON u.company_id = c.id
-      WHERE d.donor_id = ?
+      WHERE d.donor_id = $1
       ORDER BY d.created_at DESC
-    `).all(req.params.userId);
+    `, [req.params.userId]);
 
-    res.json(donations);
+    res.json(result.rows);
   } catch (error) {
     console.error('Get donations error:', error);
     res.status(500).json({ error: 'Failed to get donations' });
   }
 });
 
-// Get donation stats for a user
-app.get('/api/users/:userId/stats', (req, res) => {
+app.get('/api/users/:userId/stats', async (req, res) => {
   try {
     const userId = req.params.userId;
 
-    const totalDonated = db.prepare(`
-      SELECT COALESCE(SUM(hours), 0) as total FROM donations WHERE donor_id = ?
-    `).get(userId);
-
-    const peopleHelped = db.prepare(`
+    const totalDonated = await pool.query('SELECT COALESCE(SUM(hours), 0) as total FROM donations WHERE donor_id = $1', [userId]);
+    const peopleHelped = await pool.query(`
       SELECT COUNT(DISTINCT sr.user_id) as count
       FROM donations d
       JOIN support_requests sr ON d.request_id = sr.id
-      WHERE d.donor_id = ?
-    `).get(userId);
-
-    const user = db.prepare('SELECT available_pto_hours FROM users WHERE id = ?').get(userId);
+      WHERE d.donor_id = $1
+    `, [userId]);
+    const user = await pool.query('SELECT available_pto_hours FROM users WHERE id = $1', [userId]);
 
     res.json({
-      totalDonated: totalDonated.total,
-      peopleHelped: peopleHelped.count,
-      availablePTO: user ? user.available_pto_hours : 0
+      totalDonated: parseInt(totalDonated.rows[0].total),
+      peopleHelped: parseInt(peopleHelped.rows[0].count),
+      availablePTO: user.rows.length > 0 ? user.rows[0].available_pto_hours : 0
     });
   } catch (error) {
     console.error('Get stats error:', error);
@@ -849,25 +803,23 @@ app.get('/api/users/:userId/stats', (req, res) => {
   }
 });
 
-// ============== SERVE FRONTEND ==============
-
-// Serve index.html for root
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// ============== SEED DATA (for testing) ==============
+// ============== SEED DATA ==============
 
 app.post('/api/seed', async (req, res) => {
   try {
-    // Create a test company
-    let company = db.prepare('SELECT id FROM companies WHERE name = ?').get('Test Company');
-    if (!company) {
-      const companyResult = db.prepare('INSERT INTO companies (name, domain, allow_cross_company) VALUES (?, ?, ?)').run('Test Company', 'testcompany.com', 1);
-      company = { id: companyResult.lastInsertRowid };
+    let companyResult = await pool.query('SELECT id FROM companies WHERE name = $1', ['Test Company']);
+    let companyId;
+
+    if (companyResult.rows.length === 0) {
+      const newCompany = await pool.query(
+        'INSERT INTO companies (name, domain, allow_cross_company) VALUES ($1, $2, $3) RETURNING id',
+        ['Test Company', 'testcompany.com', true]
+      );
+      companyId = newCompany.rows[0].id;
+    } else {
+      companyId = companyResult.rows[0].id;
     }
 
-    // Create test users
     const testUsers = [
       { firstName: 'Admin', lastName: 'User', email: 'admin@testcompany.com', phone: '555-0001', username: 'admin', password: 'password123', isAdmin: true, canDonate: true, needSupport: false, ptoHours: 80 },
       { firstName: 'John', lastName: 'Donor', email: 'john@testcompany.com', phone: '555-0002', username: 'john', password: 'password123', isAdmin: false, canDonate: true, needSupport: false, ptoHours: 40 },
@@ -878,14 +830,13 @@ app.post('/api/seed', async (req, res) => {
     const createdUsers = [];
 
     for (const user of testUsers) {
-      // Check if user already exists
-      const existing = db.prepare('SELECT id FROM users WHERE email = ? OR username = ?').get(user.email, user.username);
-      if (!existing) {
+      const existing = await pool.query('SELECT id FROM users WHERE email = $1 OR username = $2', [user.email, user.username]);
+      if (existing.rows.length === 0) {
         const hashedPassword = await bcrypt.hash(user.password, 10);
-        const result = db.prepare(`
+        await pool.query(`
           INSERT INTO users (first_name, last_name, email, phone, username, password, company_id, is_company_admin, can_donate, need_support, available_pto_hours)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(user.firstName, user.lastName, user.email, user.phone, user.username, hashedPassword, company.id, user.isAdmin ? 1 : 0, user.canDonate ? 1 : 0, user.needSupport ? 1 : 0, user.ptoHours);
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        `, [user.firstName, user.lastName, user.email, user.phone, user.username, hashedPassword, companyId, user.isAdmin, user.canDonate, user.needSupport, user.ptoHours]);
         createdUsers.push({ username: user.username, email: user.email, password: user.password });
       } else {
         createdUsers.push({ username: user.username, email: user.email, password: user.password, note: 'already exists' });
@@ -901,6 +852,12 @@ app.post('/api/seed', async (req, res) => {
     console.error('Seed data error:', error);
     res.status(500).json({ error: 'Failed to seed data' });
   }
+});
+
+// ============== SERVE FRONTEND ==============
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Start server
